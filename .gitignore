@@ -6,3 +6,5 @@ outliers_detection/__pycache__/outliers.cpython-39.pyc
 plot_tools/__pycache__/__init__.cpython-39.pyc
 plot_tools/__pycache__/basics.cpython-39.pyc
 plot_tools/__pycache__/extras.cpython-39.pyc
+.vscode/settings.json
+tests/__pycache__/test_outliers.cpython-39.pyc

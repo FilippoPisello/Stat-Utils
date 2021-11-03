@@ -12,7 +12,7 @@ def plot_series(
     title: str = None,
     grid: bool = True,
     return_plot: bool = False,
-) -> Union[None, (Figure, Axes)]:
+) -> Union[None, tuple[Figure, Axes]]:
     """Draw a simple scatter representation of a pandas series.
 
     Parameters

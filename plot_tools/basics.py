@@ -1,6 +1,45 @@
 from typing import Union
 
+import pandas as pd
+from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
+from matplotlib.figure import Figure
+
+
+def plot_series(
+    series: pd.Series,
+    figsize: tuple[int, int] = (20, 8),
+    title: str = None,
+    grid: bool = True,
+    return_plot: bool = False,
+) -> Union[None, (Figure, Axes)]:
+    """Draw a simple scatter representation of a pandas series.
+
+    Parameters
+    ----------
+    series: pd.Series
+        The pandas series to be plotted.
+    figsize: tuple(int, int)
+        A tuple containing the dimensions of the plot.
+    title: str
+        The plot's title.
+    grid: bool
+        If True, a grid is added to the plot. By default is True.
+    return_plot: bool
+        If True, a tuple containing the figure and axes is returned and the plot
+        is not shown. By default is False.
+    """
+    fig, ax = plt.subplots(1, 1, figsize=(figsize))
+
+    ax.scatter(series, series.index)
+
+    add_titles_to_subplot(ax, title, "Observation Index", "Observation Value")
+    if grid:
+        add_grid_to_axes(ax)
+
+    if return_plot:
+        return fig, ax
+    plt.show()
 
 
 def add_titles_to_subplot(

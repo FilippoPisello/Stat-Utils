@@ -60,7 +60,7 @@ class MadDetector:
 
     @property
     def width(self) -> float:
-        return self.factor * 1.48 * self.series.std()
+        return self.factor * 1.48 * median_abs_deviation(self.series)
 
     @property
     def center(self) -> float:

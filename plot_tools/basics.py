@@ -31,7 +31,7 @@ def plot_series(
     """
     fig, ax = plt.subplots(1, 1, figsize=(figsize))
 
-    ax.scatter(series, series.index)
+    ax.scatter(series.index, series)
 
     add_titles_to_subplot(ax, title, "Observation Index", "Observation Value")
     if grid:

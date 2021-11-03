@@ -8,13 +8,13 @@ from scipy.stats import median_abs_deviation
 class Detector(Protocol):
     """Represent a generic detector with a minimum, maximum and center."""
 
-    def range_min(self):
+    def range_min(self) -> float:
         ...
 
-    def range_max(self):
+    def range_max(self) -> float:
         ...
 
-    def center(self):
+    def center(self) -> float:
         ...
 
 
@@ -33,20 +33,20 @@ class MeanDetector:
     factor: Union[int, float]
 
     @property
-    def width(self):
+    def width(self) -> float:
         return self.factor * self.series.std()
 
     @property
-    def center(self):
+    def center(self) -> float:
         return self.series.mean()
 
     @property
-    def range_min(self):
-        return self.series - self.width
+    def range_min(self) -> float:
+        return self.center - self.width
 
     @property
-    def range_max(self):
-        return self.series + self.width
+    def range_max(self) -> float:
+        return self.center + self.width
 
 
 @dataclass
@@ -59,17 +59,17 @@ class MadDetector:
     factor: Union[int, float]
 
     @property
-    def width(self):
+    def width(self) -> float:
         return self.factor * 1.48 * self.series.std()
 
     @property
-    def center(self):
+    def center(self) -> float:
         return median_abs_deviation(self.series)
 
     @property
-    def range_min(self):
+    def range_min(self) -> float:
         return self.center - self.width
 
     @property
-    def range_max(self):
+    def range_max(self) -> float:
         return self.center + self.width

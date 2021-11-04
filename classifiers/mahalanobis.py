@@ -69,13 +69,15 @@ class MahalanobisClassifier:
         return np.array([group[1][self.data_columns].cov() for group in grouped_df])
 
     def training_distances_from_categories(
-        self, as_dataframe: bool = False
+        self, sqrt: bool = False, as_dataframe: bool = False
     ) -> Union[ArrayLike, pd.DataFrame]:
         """Return the distances for each variable from the centers of the groups
         identified by the classifier column.
 
         Parameters
         ----------
+        sqrt : bool, optional
+            If True, the square root is applied to the distances. By default False.
         as_dataframe : bool, optional
             If True, return the distances in data frame form. Each column matches
             a value from the classifier while each row matches an observation.
@@ -91,15 +93,23 @@ class MahalanobisClassifier:
         """
         data = self.df.loc[:, self.data_columns].to_numpy()
         dists = mahanalobis_from_points(data, self.means_matrix(), self.cov_matrix())
+        if sqrt:
+            dists = np.sqrt(dists)
         if as_dataframe:
             dataframe = pd.DataFrame(dists)
             dataframe.columns = self.categories
             return dataframe
         return dists
 
-    def training_categories(self) -> pd.Series:
+    def training_categories(self, sqrt: bool = False) -> pd.Series:
         """Return a pandas series with length N containing the inferred category
         for each observation in the data frame.
+
+        Parameters
+        ----------
+        sqrt : bool, optional
+            If True, the square root is applied to the distances determining
+            the categorization. By default False.
 
         Returns
         -------
@@ -107,7 +117,7 @@ class MahalanobisClassifier:
             Series of length N. First element contains the category for the first
             observation and so on.
         """
-        distances = self.training_distances_from_categories()
+        distances = self.training_distances_from_categories(sqrt=sqrt)
         categories_indexes = pd.Series(np.argmin(distances, axis=1), name="Category")
         print(categories_indexes)
         return categories_indexes.apply(lambda x: self.categories[x])

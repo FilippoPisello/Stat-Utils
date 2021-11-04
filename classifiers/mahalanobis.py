@@ -1,3 +1,5 @@
+from typing import Union
+
 import numpy as np
 import pandas as pd
 from distances.distance import mahanalobis_from_point
@@ -38,48 +40,47 @@ class MahalanobisClassifier:
         """Return the number of variables in the data frame."""
         return self.df_all.shape[1]
 
-    @property
-    def means_matrix(self) -> ArrayLike:
-        """Return the means with shape (K, M) where K is the number of variables
+    def means_matrix(
+        self, as_dataframe: bool = False
+    ) -> Union[ArrayLike, pd.DataFrame]:
+        """Return the means with shape (M, K) where K is the number of variables
         and M is the number of different values attained by the classifier col."""
-        means = self.df_all.groupby(self.class_col).mean()
-        means = means.loc[:, self.data_columns]
-        return np.array(means).transpose()
+        means_df = self.df_all.groupby(self.class_col)[self.data_columns].mean()
 
-    @property
-    def cov_matrix(self) -> ArrayLike:
-        """Return the covariances with shape (K, K, M) where K is the number
+        if as_dataframe:
+            return means_df
+
+        return means_df.to_numpy()
+
+    def cov_matrix(self, as_dataframe: bool = False) -> Union[ArrayLike, pd.DataFrame]:
+        """Return the covariances with shape (M, K, K) where K is the number
         of values and M is the number of different values attained by the
         classifier column.
 
-        Each element (i, j, z) of the matrix represents the covariance between
+        Each element (z, i, j) of the matrix represents the covariance between
         the variable i and j, conditional to value z. For example, element
         (0, 1, 0) is the covariance between the first and second variable for the
         group of observations with the first value for the categorization column."""
-        return np.array(
-            [
-                np.cov(
-                    self.df_all.loc[
-                        self.category_series == val, self.data_columns
-                    ].transpose()
-                )
-                for val in self.categories
-            ]
-        ).transpose()
+        grouped_df = self.df_all.groupby(self.class_col)
 
-    def distance_training_data(self) -> pd.Series:
+        if as_dataframe:
+            return grouped_df[self.data_columns].cov()
+
+        return np.array([group[1][self.data_columns].cov() for group in grouped_df])
+
+    def categories_training_data(self) -> pd.Series:
         y_hat = np.zeros([self.number_obs, 1])
         Mana_dist = np.zeros([self.number_categories, 1])
 
-        means = self.means_matrix
-        covs = self.cov_matrix
+        means = self.means_matrix()
+        covs = self.cov_matrix()
         for n in range(self.number_obs):
             for k in range(self.number_categories):
                 Mana_dist[k, 0] = np.sqrt(
                     mahanalobis_from_point(
                         self.df.iloc[n, :],
-                        points=means[:, k].transpose(),
-                        cov=covs[:, :, k],
+                        points=means[k].transpose(),
+                        cov=covs[k],
                     )
                 )
             y_hat[n, 0] = np.argmin(Mana_dist[:, 0])

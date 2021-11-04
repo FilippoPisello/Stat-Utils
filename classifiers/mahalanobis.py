@@ -62,15 +62,13 @@ class MahalanobisClassifier:
         the variable i and j, conditional to value z. For example, element
         (0, 1, 0) is the covariance between the first and second variable for the
         group of observations with the first value for the categorization column."""
-        return [
+        return np.array(
             [
-                [
-                    np.array(
-                        self.df_all.loc[self.category_series == val, [var1, var2]].cov()
-                    )[0, 1]
+                np.cov(
+                    self.df_all.loc[
+                        self.category_series == val, self.data_columns
+                    ].transpose()
+                )
                     for val in self.categories
                 ]
-                for var1 in self.data_col
-            ]
-            for var2 in self.data_col
-        ]
+        ).transpose()

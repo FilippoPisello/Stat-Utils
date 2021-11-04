@@ -25,6 +25,42 @@ def mahanalobis_from_center(array: ArrayLike) -> ArrayLike:
     return mahanalobis_from_point(array, means, cov)
 
 
+def mahanalobis_from_points(
+    array: ArrayLike, points: ArrayLike, cov: ArrayLike
+) -> ArrayLike:
+    """Return the mahanalobis distance from some specified points.
+
+    Parameters
+    ----------
+    array : np.array
+        The array with size (N, K) the distance is to be computed on. It can be
+        either 2-D or 1-D.
+    points : np.array
+        The points in respect of which the distance is computed. It must be of
+        size (M, K). It contains M arrays with K values each.
+    cov : np.array
+        The covariances conditional to some grouping related to the different
+        points. Generally the points are the means for groups of data. The array
+        must be of size (M, K, K), where K is the number of variables and M is
+        the number of different points.
+
+        Each element (z, i, j) of the matrix represents the covariance between
+        the variable i and j, conditional to value z.
+
+    Returns
+    -------
+    np.array
+        The array of distances of dimensions (N, M). Each element (x, y) is the
+        distance of observation x from point y, where x=[1, ..., N] and
+        y=[1, ..., M].
+    """
+    number_of_points = points.shape[0]
+    result = np.zeros((array.shape[0], number_of_points), dtype=np.float)
+    for i in range(number_of_points):
+        result[:, i] = mahanalobis_from_point(array, points[i], cov[i]).squeeze()
+    return result
+
+
 def mahanalobis_from_point(
     array: ArrayLike, points: ArrayLike, cov: ArrayLike
 ) -> ArrayLike:

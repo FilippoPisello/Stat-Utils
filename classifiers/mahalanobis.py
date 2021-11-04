@@ -2,7 +2,7 @@ from typing import Union
 
 import numpy as np
 import pandas as pd
-from distances.distance import mahanalobis_from_point
+from distances.distance import mahanalobis_from_point, mahanalobis_from_points
 from numpy.typing import ArrayLike
 
 
@@ -68,20 +68,46 @@ class MahalanobisClassifier:
 
         return np.array([group[1][self.data_columns].cov() for group in grouped_df])
 
-    def categories_training_data(self) -> pd.Series:
-        y_hat = np.zeros([self.number_obs, 1])
-        Mana_dist = np.zeros([self.number_categories, 1])
+    def training_distances_from_categories(
+        self, as_dataframe: bool = False
+    ) -> Union[ArrayLike, pd.DataFrame]:
+        """Return the distances for each variable from the centers of the groups
+        identified by the classifier column.
 
-        means = self.means_matrix()
-        covs = self.cov_matrix()
-        for n in range(self.number_obs):
-            for k in range(self.number_categories):
-                Mana_dist[k, 0] = np.sqrt(
-                    mahanalobis_from_point(
-                        self.df.iloc[n, :],
-                        points=means[k].transpose(),
-                        cov=covs[k],
-                    )
-                )
-            y_hat[n, 0] = np.argmin(Mana_dist[:, 0])
-        return y_hat
+        Parameters
+        ----------
+        as_dataframe : bool, optional
+            If True, return the distances in data frame form. Each column matches
+            a value from the classifier while each row matches an observation.
+            By default False.
+
+        Returns
+        -------
+        Union[ArrayLike, pd.DataFrame]
+            The result has size (N, M) where N is the number of observations while
+            M is the number of groups. Each element (x, y) is the distance between
+            observation x and the center of group y, where x = [1, ..., N] and
+            y = [1, ..., M].
+        """
+        data = self.df.loc[:, self.data_columns].to_numpy()
+        dists = mahanalobis_from_points(data, self.means_matrix(), self.cov_matrix())
+        if as_dataframe:
+            dataframe = pd.DataFrame(dists)
+            dataframe.columns = self.categories
+            return dataframe
+        return dists
+
+    def training_categories(self) -> pd.Series:
+        """Return a pandas series with length N containing the inferred category
+        for each observation in the data frame.
+
+        Returns
+        -------
+        pd.Series
+            Series of length N. First element contains the category for the first
+            observation and so on.
+        """
+        distances = self.training_distances_from_categories()
+        categories_indexes = pd.Series(np.argmin(distances, axis=1), name="Category")
+        print(categories_indexes)
+        return categories_indexes.apply(lambda x: self.categories[x])

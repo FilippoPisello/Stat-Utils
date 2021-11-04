@@ -1,7 +1,7 @@
 from unittest import TestCase
 
 import pandas as pd
-from outliers_detection import detectors, outliers
+from outliers import detectors, outliers_detection
 from scipy.stats import median_abs_deviation
 
 
@@ -33,7 +33,7 @@ class TestOutlier(TestCase):
 
     def test_outliers_series(self):
         """Test that a series outliers are correctly detected"""
-        outs_mean = outliers.series_outliers(self.series1, "mean")
+        outs_mean = outliers_detection.series_outliers(self.series1, "mean")
         known_mean = pd.Series(
             [
                 20.65081351689612,
@@ -71,7 +71,7 @@ class TestOutlier(TestCase):
         )
         pd.testing.assert_series_equal(outs_mean, known_mean)
 
-        outs_mad = outliers.series_outliers(self.series1, "mad")
+        outs_mad = outliers_detection.series_outliers(self.series1, "mad")
         known_mad = pd.Series(
             [
                 20.65081351689612,

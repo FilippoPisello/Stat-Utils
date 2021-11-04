@@ -9,8 +9,8 @@ class MahalanobisClassifier:
         self, dataframe: pd.DataFrame, classifier_col: str, usecols: list[str] = None
     ):
         self.df_all = dataframe
-        self.cols = usecols if usecols is not None else dataframe.columns
-        self.df = dataframe.loc[:, self.cols].copy()
+        self.data_columns = usecols if usecols is not None else dataframe.columns
+        self.df = dataframe.loc[:, self.data_columns].copy()
         self.class_col = classifier_col
 
     @property
@@ -19,14 +19,14 @@ class MahalanobisClassifier:
         return self.df_all[self.class_col].unique()
 
     @property
-    def number_categories(self) -> int:
-        """Return the number of unique values in the classifier column."""
-        return len(self.categories)
-
-    @property
     def category_series(self) -> ArrayLike:
         """Return the series of the classifier column"""
         return self.df_all[self.class_col]
+
+    @property
+    def number_categories(self) -> int:
+        """Return the number of unique values in the classifier column."""
+        return len(self.categories)
 
     @property
     def number_obs(self) -> int:
@@ -39,17 +39,11 @@ class MahalanobisClassifier:
         return self.df_all.shape[1]
 
     @property
-    def data_col(self) -> ArrayLike:
-        """Return the list of columns that contain data for the distance
-        to be computed."""
-        return self.df.columns
-
-    @property
     def means_matrix(self) -> ArrayLike:
         """Return the means with shape (K, M) where K is the number of variables
         and M is the number of different values attained by the classifier col."""
         means = self.df_all.groupby(self.class_col).mean()
-        means = means.loc[:, self.data_col]
+        means = means.loc[:, self.data_columns]
         return np.array(means).transpose()
 
     @property
@@ -69,6 +63,24 @@ class MahalanobisClassifier:
                         self.category_series == val, self.data_columns
                     ].transpose()
                 )
-                    for val in self.categories
-                ]
+                for val in self.categories
+            ]
         ).transpose()
+
+    def distance_training_data(self) -> pd.Series:
+        y_hat = np.zeros([self.number_obs, 1])
+        Mana_dist = np.zeros([self.number_categories, 1])
+
+        means = self.means_matrix
+        covs = self.cov_matrix
+        for n in range(self.number_obs):
+            for k in range(self.number_categories):
+                Mana_dist[k, 0] = np.sqrt(
+                    mahanalobis_from_point(
+                        self.df.iloc[n, :],
+                        points=means[:, k].transpose(),
+                        cov=covs[:, :, k],
+                    )
+                )
+            y_hat[n, 0] = np.argmin(Mana_dist[:, 0])
+        return y_hat

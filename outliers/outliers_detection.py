@@ -6,7 +6,7 @@ from matplotlib import pyplot as plt
 from plot_tools.basics import plot_series
 from plot_tools.extras import add_symmetric_interval
 
-import outliers_detection.detectors as detect
+import outliers.detectors as detect
 
 
 def outliers_plot(
@@ -43,6 +43,7 @@ def outliers_plot(
         ax, detector.center, detector.width, double_variation=False, color=lines_color
     )
     plt.show()
+
 
 def dataframe_outliers(
     dataframe: pd.DataFrame, column: str, method: str = "mean", factor: int = 2

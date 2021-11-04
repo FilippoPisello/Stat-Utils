@@ -8,3 +8,11 @@ plot_tools/__pycache__/basics.cpython-39.pyc
 plot_tools/__pycache__/extras.cpython-39.pyc
 .vscode/settings.json
 tests/__pycache__/test_outliers.cpython-39.pyc
+outliers/__pycache__/__init__.cpython-39.pyc
+outliers/__pycache__/detectors.cpython-39.pyc
+outliers/__pycache__/outliers_detection.cpython-39.pyc
+outliers/__pycache__/outliers.cpython-39.pyc
+classifiers/__pycache__/__init__.cpython-39.pyc
+classifiers/__pycache__/mahalanobis.cpython-39.pyc
+distances/__pycache__/__init__.cpython-39.pyc
+distances/__pycache__/distance.cpython-39.pyc

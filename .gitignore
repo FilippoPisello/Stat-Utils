@@ -16,3 +16,4 @@ classifiers/__pycache__/__init__.cpython-39.pyc
 classifiers/__pycache__/mahalanobis.cpython-39.pyc
 distances/__pycache__/__init__.cpython-39.pyc
 distances/__pycache__/distance.cpython-39.pyc
+tests/__pycache__/test_mahalanobis.cpython-39.pyc

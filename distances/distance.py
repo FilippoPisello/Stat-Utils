@@ -69,13 +69,14 @@ def mahanalobis_from_point(
     Parameters
     ----------
     array : np.array
-        The array the distance is to be computed on. It can be either 2-D or 1-D.
-        If 1-D, the points and cov parameters must be provided.
-    points : np.array
-        The points in respect of which the distance is computed. If array has
-        dimension (N, K), points must have dimension (K, 1).
+        The array with size (N, K) the distance is to be computed on. It can be
+        either 2-D or 1-D.
+    point : np.array
+        The 1-D array identifying the point in respect of which the distance is
+        computed. It must have length K.
     cov : np.array
-        If array has dimension (N, K) cov must have dimension (K, K).
+        The matrix containing the covariance between the array's columns. It
+        must have dimension (K, K).
 
     Returns
     -------

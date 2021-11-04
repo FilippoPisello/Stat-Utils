@@ -3,7 +3,7 @@ from unittest import TestCase
 import numpy as np
 import pandas as pd
 from classifiers.mahalanobis import MahalanobisClassifier
-from distances.distance import mahanalobis_from_center
+from distances.distance import mahanalobis_from_center, mahanalobis_from_points
 
 
 class TestMahalanobis(TestCase):
@@ -35,38 +35,76 @@ class TestMahalanobis(TestCase):
                 [3.52012315],
             ]
         )
-        arr = np.array(self.df1[["Duration", "Budget"]].head(500))
+        arr = np.array(self.df1[["Budget", "Duration"]].head(500))
         res = mahanalobis_from_center(arr)
         np.testing.assert_allclose(res[:20], exp, rtol=1e-5, atol=1e-5)
 
-    def test_point_min_distance(self):
+    def test_points_distance(self):
         exp = np.array(
             [
-                [1.0],
-                [1.0],
-                [0.0],
-                [0.0],
-                [1.0],
-                [1.0],
-                [1.0],
-                [1.0],
-                [0.0],
-                [0.0],
-                [1.0],
-                [0.0],
-                [0.0],
-                [1.0],
-                [1.0],
-                [1.0],
-                [0.0],
-                [1.0],
-                [1.0],
-                [1.0],
+                [1.41551149, 1.08980545],
+                [1.31665212, 1.05116969],
+                [1.29927631, 1.31502399],
+                [1.21596282, 1.24732306],
+                [5.06281735, 4.21684498],
+                [1.1452917, 1.05226385],
+                [1.20342253, 1.0303845],
+                [1.05495851, 0.92586988],
+                [1.40005259, 1.41959247],
+                [1.40600472, 1.46696041],
+                [4.74552411, 3.96824162],
+                [1.30069608, 1.31570166],
+                [1.31693498, 1.3234666],
+                [1.15710169, 1.0292926],
+                [1.15167372, 1.05577169],
+                [1.05913516, 0.82242966],
+                [1.19468852, 1.22329449],
+                [3.00686777, 2.48763513],
+                [1.47327275, 1.05059172],
+                [2.1202364, 1.70433108],
+            ]
+        )
+        arr = self.df1.head(500).loc[:, ["Budget", "Duration"]].to_numpy()
+        means = np.array([[301.26818811, 85.63948498], [395.92684288, 94.06367041]])
+        covs = np.array(
+            [
+                [[60708.57977331, 2307.08560791], [2307.08560791, 717.66257215]],
+                [[142099.42932494, 4063.74304655], [4063.74304655, 910.86435189]],
+            ]
+        )
+        res = mahanalobis_from_points(arr, means, covs)
+        res = np.sqrt(res)
+        np.testing.assert_allclose(res[:20], exp, rtol=1e-5, atol=1e-5)
+
+    def test_categorization(self):
+        """Chech that categorization happens correctly."""
+        exp = np.array(
+            [
+                True,
+                True,
+                False,
+                False,
+                True,
+                True,
+                True,
+                True,
+                False,
+                False,
+                True,
+                False,
+                False,
+                True,
+                True,
+                True,
+                False,
+                True,
+                True,
+                True,
             ]
         )
 
         cls = MahalanobisClassifier(
-            self.df1.head(500), "IsGood", ["Duration", "Budget"]
+            self.df1.head(500), "IsGood", ["Budget", "Duration"]
         )
-        res = cls.distance_training_data()
+        res = cls.training_categories()
         np.testing.assert_array_equal(res[:20], exp)

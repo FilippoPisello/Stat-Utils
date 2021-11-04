@@ -37,15 +37,14 @@ def mahanalobis_from_point(
         If 1-D, the points and cov parameters must be provided.
     points : np.array
         The points in respect of which the distance is computed. If array has
-        dimension (N, K), points must have dimension (K, M).
+        dimension (N, K), points must have dimension (K, 1).
     cov : np.array
-        If array has dimension (N, K) and points has dimension (K, M), cov must
-        have dimension (K, K, M).
+        If array has dimension (N, K) cov must have dimension (K, K).
 
     Returns
     -------
     np.array
-        The array of distances of dimensions (N, M).
+        The array of distances of dimensions (N, 1).
     """
     # Case where uni-dimensional array
     if array.ndim == 1:
@@ -63,7 +62,7 @@ def mahanalobis_from_point(
     inv_covmat = np.linalg.inv(cov)
 
     return np.array(
-        [  # Single loop dimensionality: (M, K) x (K x K x M) x (M, K) = M
+        [  # Single loop dimensionality: (1, K) x (K x K) x (1, K) = 1
             [diff_array_points[i, :] @ inv_covmat @ diff_array_points[i, :]]
             for i in range(array.shape[0])
         ]

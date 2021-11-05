@@ -2,7 +2,7 @@ import numpy as np
 from numpy.typing import ArrayLike
 
 
-def mahanalobis_from_center(array: ArrayLike) -> ArrayLike:
+def mahanalobis_from_center(array: ArrayLike, sqrt: bool = False) -> ArrayLike:
     """Return the mahanalobis distance for each series item from the center of
     the data.
 
@@ -10,6 +10,8 @@ def mahanalobis_from_center(array: ArrayLike) -> ArrayLike:
     ----------
     array : ArrayLike
         The array the distance is to be computed on. It must be two-dimensional.
+    sqrt: bool, optional
+        If True, the distance is square rooted. By default is False.
 
     Returns
     -------
@@ -22,11 +24,11 @@ def mahanalobis_from_center(array: ArrayLike) -> ArrayLike:
     array = _make_vertical_if_horizontal(array)
     cov = np.cov(array.transpose())
     means = np.mean(array, axis=0)
-    return mahanalobis_from_point(array, means, cov)
+    return mahanalobis_from_point(array, means, cov, sqrt)
 
 
 def mahanalobis_from_points(
-    array: ArrayLike, points: ArrayLike, cov: ArrayLike
+    array: ArrayLike, points: ArrayLike, cov: ArrayLike, sqrt: bool = False
 ) -> ArrayLike:
     """Return the mahanalobis distance from some specified points.
 
@@ -46,6 +48,8 @@ def mahanalobis_from_points(
 
         Each element (z, i, j) of the matrix represents the covariance between
         the variable i and j, conditional to value z.
+    sqrt: bool, optional
+        If True, the distance is square rooted. By default is False.
 
     Returns
     -------
@@ -57,12 +61,12 @@ def mahanalobis_from_points(
     number_of_points = points.shape[0]
     result = np.zeros((array.shape[0], number_of_points), dtype=np.float)
     for i in range(number_of_points):
-        result[:, i] = mahanalobis_from_point(array, points[i], cov[i]).squeeze()
+        result[:, i] = mahanalobis_from_point(array, points[i], cov[i], sqrt).squeeze()
     return result
 
 
 def mahanalobis_from_point(
-    array: ArrayLike, points: ArrayLike, cov: ArrayLike
+    array: ArrayLike, points: ArrayLike, cov: ArrayLike, sqrt: bool = False
 ) -> ArrayLike:
     """Return the mahanalobis distance from a specified point.
 
@@ -77,6 +81,8 @@ def mahanalobis_from_point(
     cov : np.array
         The matrix containing the covariance between the array's columns. It
         must have dimension (K, K).
+    sqrt: bool, optional
+        If True, the distance is square rooted. By default is False.
 
     Returns
     -------
@@ -98,12 +104,15 @@ def mahanalobis_from_point(
     diff_array_points = array - points
     inv_covmat = np.linalg.inv(cov)
 
-    return np.array(
+    distances = np.array(
         [  # Single loop dimensionality: (1, K) x (K x K) x (1, K) = 1
             [diff_array_points[i, :] @ inv_covmat @ diff_array_points[i, :]]
             for i in range(array.shape[0])
         ]
     )
+    if sqrt:
+        return np.sqrt(distances)
+    return distances
 
 
 def _make_vertical_if_horizontal(array: ArrayLike) -> ArrayLike:

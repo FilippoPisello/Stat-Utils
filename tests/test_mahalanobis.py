@@ -39,6 +39,10 @@ class TestMahalanobis(TestCase):
         res = mahanalobis_from_center(arr)
         np.testing.assert_allclose(res[:20], exp, rtol=1e-5, atol=1e-5)
 
+        exp_sqrt = np.sqrt(exp)
+        res_sqrt = mahanalobis_from_center(arr, sqrt=True)
+        np.testing.assert_allclose(res_sqrt[:20], exp_sqrt, rtol=1e-5, atol=1e-5)
+
     def test_points_distance(self):
         exp = np.array(
             [
@@ -106,5 +110,5 @@ class TestMahalanobis(TestCase):
         cls = MahalanobisClassifier(
             self.df1.head(500), "IsGood", ["Budget", "Duration"]
         )
-        res = cls.training_categories()
+        res = cls.categorize_training()
         np.testing.assert_array_equal(res[:20], exp)

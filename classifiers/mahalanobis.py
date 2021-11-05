@@ -60,16 +60,55 @@ class MahalanobisClassifier:
         distances = self.distances_from_training_data(sqrt=sqrt)
         return self.categories_from_distances(distances)
 
-    def cov_matrix(self, as_dataframe: bool = False) -> Union[ArrayLike, pd.DataFrame]:
-        """Return the covariances with shape (M, K, K) where K is the number
-        of values and M is the number of different values attained by the
-        classifier column.
+    # from NEW DATA to CATEGORY
+    def categorize_new_data(
+        self, new_data: Union[pd.DataFrame, ArrayLike]
+    ) -> pd.Series:
+        """Given a set of data with size (N, K), return a pandas series with length
+        N containing the mahanalobis categories for the input data.
 
-        Each element (z, i, j) of the matrix represents the covariance between
-        the variable i and j, conditional to value z. For example, element
-        (0, 1, 0) is the covariance between the first and second variable for the
-        group of observations with the first value for the categorization column."""
-        grouped_df = self.df_all.groupby(self.class_col)
+        The observation is assigned to the category whose center is closest.
+
+
+        Parameters
+        ----------
+        new_data : Union[pd.DataFrame, ArrayLike]
+            The new data to be classified. If pandas dataframe any number of
+            columns is allowed as long as the ones used for centers calculation
+            are present. More on KeyError note down here.
+            If array, it is assumed that the columns match the order of the ones
+            in the original data frame. Array's shape must be (N, K), where K
+            is the number of columns used for the original centers calculation.
+
+        Returns
+        -------
+        pd.Series
+            Series of length N. First element contains the category for the first
+            observation and so on.
+
+        Raises
+        ------
+        KeyError
+            Raised if among the columns of the data provided in data frame the
+            original data columns are not found.
+            Example: if the categories centers were calculated over the columns
+            "Foo" "Bar", then "Foo" "Bar" must be within new_data columns.
+
+        """
+        if isinstance(new_data, pd.DataFrame):
+            try:
+                data = new_data.loc[:, self.data_columns]
+            except KeyError as e:
+                raise KeyError(
+                    """The dataframe with new data must have the same
+                               data columns as the original one"""
+                ) from e
+            data = data.to_numpy()
+
+        distances = mahanalobis_from_points(
+            data, self.means_matrix(), self.cov_matrix()
+        )
+        return self.categories_from_distances(distances)
 
     # from DISTANCES to CATEGORY
     def categories_from_distances(self, distances: ArrayLike) -> pd.Series:

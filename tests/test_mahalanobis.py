@@ -110,5 +110,5 @@ class TestMahalanobis(TestCase):
         cls = MahalanobisClassifier(
             self.df1.head(500), "IsGood", ["Budget", "Duration"]
         )
-        res = cls.categorize_training()
+        res = cls.categorize_training_data()
         np.testing.assert_array_equal(res[:20], exp)

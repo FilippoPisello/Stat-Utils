@@ -40,6 +40,93 @@ class MahalanobisClassifier:
         """Return the number of variables in the data frame."""
         return self.df_all.shape[1]
 
+    # from EXISTING DATA to CATEGORY
+    def categorize_training_data(self, sqrt: bool = False) -> pd.Series:
+        """Return a pandas series with length N containing the inferred category
+        for each observation in the training data frame.
+
+        Parameters
+        ----------
+        sqrt : bool, optional
+            If True, the square root is applied to the distances determining
+            the categorization. By default False.
+
+        Returns
+        -------
+        pd.Series
+            Series of length N. First element contains the category for the first
+            observation and so on.
+        """
+        distances = self.distances_from_training_data(sqrt=sqrt)
+        return self.categories_from_distances(distances)
+
+    def cov_matrix(self, as_dataframe: bool = False) -> Union[ArrayLike, pd.DataFrame]:
+        """Return the covariances with shape (M, K, K) where K is the number
+        of values and M is the number of different values attained by the
+        classifier column.
+
+        Each element (z, i, j) of the matrix represents the covariance between
+        the variable i and j, conditional to value z. For example, element
+        (0, 1, 0) is the covariance between the first and second variable for the
+        group of observations with the first value for the categorization column."""
+        grouped_df = self.df_all.groupby(self.class_col)
+
+    # from DISTANCES to CATEGORY
+    def categories_from_distances(self, distances: ArrayLike) -> pd.Series:
+        """Return a pandas series with length N containing the inferred category
+        for each element in the distances array.
+
+        The observation is assigned to the category whose center is closest.
+
+        Parameters
+        ----------
+        distances : ArrayLike
+            An array of shape (N, M), containing the distances from M points for
+            N observations.
+
+        Returns
+        -------
+        pd.Series
+            Series of length N. First element contains the category for the first
+            observation and so on.
+        """
+        categories_indexes = pd.Series(np.argmin(distances, axis=1), name="Category")
+        return categories_indexes.apply(lambda x: self.categories[x])
+
+    # from EXISTING DATA to DISTANCES
+    def distances_from_training_data(
+        self, sqrt: bool = False, as_dataframe: bool = False
+    ) -> Union[ArrayLike, pd.DataFrame]:
+        """Return the distances for each variable from the centers of the groups
+        identified by the classifier column.
+
+        Parameters
+        ----------
+        sqrt : bool, optional
+            If True, the square root is applied to the distances. By default False.
+        as_dataframe : bool, optional
+            If True, return the distances in data frame form. Each column matches
+            a value from the classifier while each row matches an observation.
+            By default False.
+
+        Returns
+        -------
+        Union[ArrayLike, pd.DataFrame]
+            The result has size (N, M) where N is the number of observations while
+            M is the number of groups. Each element (x, y) is the distance between
+            observation x and the center of group y, where x = [1, ..., N] and
+            y = [1, ..., M].
+        """
+        data = self.df.loc[:, self.data_columns].to_numpy()
+        dists = mahanalobis_from_points(
+            data, self.means_matrix(), self.cov_matrix(), sqrt
+        )
+        if as_dataframe:
+            dataframe = pd.DataFrame(dists)
+            dataframe.columns = self.categories
+            return dataframe
+        return dists
+
     def means_matrix(
         self, as_dataframe: bool = False
     ) -> Union[ArrayLike, pd.DataFrame]:
@@ -67,57 +154,3 @@ class MahalanobisClassifier:
             return grouped_df[self.data_columns].cov()
 
         return np.array([group[1][self.data_columns].cov() for group in grouped_df])
-
-    def training_distances_from_categories(
-        self, sqrt: bool = False, as_dataframe: bool = False
-    ) -> Union[ArrayLike, pd.DataFrame]:
-        """Return the distances for each variable from the centers of the groups
-        identified by the classifier column.
-
-        Parameters
-        ----------
-        sqrt : bool, optional
-            If True, the square root is applied to the distances. By default False.
-        as_dataframe : bool, optional
-            If True, return the distances in data frame form. Each column matches
-            a value from the classifier while each row matches an observation.
-            By default False.
-
-        Returns
-        -------
-        Union[ArrayLike, pd.DataFrame]
-            The result has size (N, M) where N is the number of observations while
-            M is the number of groups. Each element (x, y) is the distance between
-            observation x and the center of group y, where x = [1, ..., N] and
-            y = [1, ..., M].
-        """
-        data = self.df.loc[:, self.data_columns].to_numpy()
-        dists = mahanalobis_from_points(data, self.means_matrix(), self.cov_matrix())
-        if sqrt:
-            dists = np.sqrt(dists)
-        if as_dataframe:
-            dataframe = pd.DataFrame(dists)
-            dataframe.columns = self.categories
-            return dataframe
-        return dists
-
-    def training_categories(self, sqrt: bool = False) -> pd.Series:
-        """Return a pandas series with length N containing the inferred category
-        for each observation in the data frame.
-
-        Parameters
-        ----------
-        sqrt : bool, optional
-            If True, the square root is applied to the distances determining
-            the categorization. By default False.
-
-        Returns
-        -------
-        pd.Series
-            Series of length N. First element contains the category for the first
-            observation and so on.
-        """
-        distances = self.training_distances_from_categories(sqrt=sqrt)
-        categories_indexes = pd.Series(np.argmin(distances, axis=1), name="Category")
-        print(categories_indexes)
-        return categories_indexes.apply(lambda x: self.categories[x])

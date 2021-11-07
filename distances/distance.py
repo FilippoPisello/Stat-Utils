@@ -59,7 +59,14 @@ def mahanalobis_from_points(
         y=[1, ..., M].
     """
     number_of_points = points.shape[0]
-    result = np.zeros((array.shape[0], number_of_points), dtype=np.float)
+
+    # To handle the case where 1-D array is passed
+    if array.ndim == 1:
+        n_distances = 1  # If array is 1-D just one observation -> 1 distance
+    else:
+        n_distances = array.shape[0]  # Else: N observations -> N distances
+
+    result = np.zeros((n_distances, number_of_points), dtype=np.float)
     for i in range(number_of_points):
         result[:, i] = mahanalobis_from_point(array, points[i], cov[i], sqrt).squeeze()
     return result

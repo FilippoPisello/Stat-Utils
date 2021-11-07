@@ -35,7 +35,7 @@ class TestMahalanobis(TestCase):
                 [3.52012315],
             ]
         )
-        arr = np.array(self.df1[["Budget", "Duration"]].head(500))
+        arr = np.array(self.df1[["Budget", "Duration"]])
         res = mahanalobis_from_center(arr)
         np.testing.assert_allclose(res[:20], exp, rtol=1e-5, atol=1e-5)
 
@@ -68,7 +68,7 @@ class TestMahalanobis(TestCase):
                 [2.1202364, 1.70433108],
             ]
         )
-        arr = self.df1.head(500).loc[:, ["Budget", "Duration"]].to_numpy()
+        arr = self.df1.loc[:, ["Budget", "Duration"]].to_numpy()
         means = np.array([[301.26818811, 85.63948498], [395.92684288, 94.06367041]])
         covs = np.array(
             [
@@ -80,7 +80,7 @@ class TestMahalanobis(TestCase):
         res = np.sqrt(res)
         np.testing.assert_allclose(res[:20], exp, rtol=1e-5, atol=1e-5)
 
-    def test_categorization(self):
+    def test_training_categorization(self):
         """Chech that categorization happens correctly."""
         exp = np.array(
             [
@@ -107,8 +107,15 @@ class TestMahalanobis(TestCase):
             ]
         )
 
-        cls = MahalanobisClassifier(
-            self.df1.head(500), "IsGood", ["Budget", "Duration"]
-        )
+        cls = MahalanobisClassifier(self.df1, "IsGood", ["Budget", "Duration"])
         res = cls.categorize_training_data()
         np.testing.assert_array_equal(res[:20], exp)
+
+    def test_new_categorization(self):
+        """Test that new observations are classified correctly."""
+        cls = MahalanobisClassifier(self.df1, "IsGood", ["Budget", "Duration"])
+        dists = mahanalobis_from_points(
+            np.array([90, 2810]), cls.means_matrix(), cls.cov_matrix(), sqrt=True
+        )
+        exp = np.array([[108.86547188, 96.65931728]])
+        np.testing.assert_allclose(dists, exp, rtol=1e-5, atol=1e-5)

@@ -95,15 +95,16 @@ class MahalanobisClassifier:
             "Foo" "Bar", then "Foo" "Bar" must be within new_data columns.
 
         """
+        data = new_data.copy()
         if isinstance(new_data, pd.DataFrame):
             try:
-                data = new_data.loc[:, self.data_columns]
+                data = data.loc[:, self.data_columns]
             except KeyError as e:
                 raise KeyError(
                     """The dataframe with new data must have the same
                                data columns as the original one"""
                 ) from e
-            data = data.to_numpy()
+            data = data.to_numpy().squeeze()
 
         distances = mahanalobis_from_points(
             data, self.means_matrix(), self.cov_matrix()

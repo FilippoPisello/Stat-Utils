@@ -91,28 +91,71 @@ def mahanalobis_from_point(
     """
     # Case where uni-dimensional array
     if array.ndim == 1:
-        if len(array) == 1:
-            return (array - points) ** 2 / cov  # Univariate
-
-        diff_array_points = np.array(array - points, ndmin=2)  # array 1xK
-        return diff_array_points @ np.linalg.inv(cov) @ diff_array_points.transpose()
-
+        distances = _unidim_mahanalobis_from_point(array, points, cov)
     # Case where multi-dimensional array
+    else:
+        distances = _multidim_mahanalobis_from_point(array, points, cov)
+
+    if sqrt:
+        return np.sqrt(distances)
+    return distances
+
+
+def _unidim_mahanalobis_from_point(
+    array: ArrayLike, points: ArrayLike, cov: ArrayLike
+) -> ArrayLike:
+    """Return mahanalobis distance for a uni-dimensional array.
+
+    Parameters
+    ----------
+    array : np.array
+        A uni-dimensional array of length K.
+    point : np.array
+        A uni-dimensional array of length K.
+    cov : np.array
+        The covariance matrix of dimension (K, K).
+
+    Returns
+    -------
+    np.array
+        The array of distances of dimensions (1, 1)."""
+    if len(array) == 1:
+        return (array - points) ** 2 / cov  # Univariate
+
+    diff_array_points = np.array(array - points, ndmin=2)  # array 1xK
+    return diff_array_points @ np.linalg.inv(cov) @ diff_array_points.transpose()
+
+
+def _multidim_mahanalobis_from_point(
+    array: ArrayLike, points: ArrayLike, cov: ArrayLike
+) -> ArrayLike:
+    """Return mahanalobis distance for a multi-dimensional array.
+
+    Parameters
+    ----------
+    array : np.array
+        The data array with size (N, K).
+    point : np.array
+        A uni-dimensional array of length K.
+    cov : np.array
+        The covariance matrix of dimension (K, K).
+
+    Returns
+    -------
+    np.array
+        The array of distances of dimensions (N, 1)."""
     array = _make_vertical_if_horizontal(array)
 
     # Get the dimensions ready for matrix multiplication
     diff_array_points = array - points
     inv_covmat = np.linalg.inv(cov)
 
-    distances = np.array(
+    return np.array(
         [  # Single loop dimensionality: (1, K) x (K x K) x (1, K) = 1
             [diff_array_points[i, :] @ inv_covmat @ diff_array_points[i, :]]
             for i in range(array.shape[0])
         ]
     )
-    if sqrt:
-        return np.sqrt(distances)
-    return distances
 
 
 def _make_vertical_if_horizontal(array: ArrayLike) -> ArrayLike:

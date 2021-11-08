@@ -3,7 +3,7 @@ from unittest import TestCase
 import numpy as np
 import pandas as pd
 from classifiers.mahalanobis import MahalanobisClassifier
-from distances.distance import mahanalobis_from_center, mahanalobis_from_points
+from distances.mahalanobis import mahanalobis_from_center, mahanalobis_from_points
 
 
 class TestMahalanobis(TestCase):

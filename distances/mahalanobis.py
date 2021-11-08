@@ -1,21 +1,20 @@
 import numpy as np
-from numpy.typing import ArrayLike
 
 
-def mahanalobis_from_center(array: ArrayLike, sqrt: bool = False) -> ArrayLike:
+def mahanalobis_from_center(array: np.ndarray, sqrt: bool = False) -> np.ndarray:
     """Return the mahanalobis distance for each series item from the center of
     the data.
 
     Parameters
     ----------
-    array : ArrayLike
+    array : np.ndarray
         The array the distance is to be computed on. It must be two-dimensional.
     sqrt: bool, optional
         If True, the distance is square rooted. By default is False.
 
     Returns
     -------
-    ArrayLike
+    np.ndarray
         An array of size (N, 1) containing the distances.
     """
     if array.ndim == 1:
@@ -28,9 +27,10 @@ def mahanalobis_from_center(array: ArrayLike, sqrt: bool = False) -> ArrayLike:
 
 
 def mahanalobis_from_points(
-    array: ArrayLike, points: ArrayLike, cov: ArrayLike, sqrt: bool = False
-) -> ArrayLike:
-    """Return the mahanalobis distance from some specified points.
+    array: np.ndarray, points: np.ndarray, cov: np.ndarray, sqrt: bool = False
+) -> np.ndarray:
+    """Return an array of array made of the mahanalobis distances between each
+    element and each of the specified points.
 
     Parameters
     ----------
@@ -54,9 +54,10 @@ def mahanalobis_from_points(
     Returns
     -------
     np.array
-        The array of distances of dimensions (N, M). Each element (x, y) is the
-        distance of observation x from point y, where x=[1, ..., N] and
-        y=[1, ..., M].
+        The array of distances of dimensions (N, M). For each of the N elements,
+        there is a distance from each of the M points.
+        Each element (x, y) is the mahanalobis distance of observation x from
+        point y, where x=[1, ..., N] and y=[1, ..., M].
     """
     number_of_points = points.shape[0]
 
@@ -73,9 +74,10 @@ def mahanalobis_from_points(
 
 
 def mahanalobis_from_point(
-    array: ArrayLike, points: ArrayLike, cov: ArrayLike, sqrt: bool = False
-) -> ArrayLike:
-    """Return the mahanalobis distance from a specified point.
+    array: np.ndarray, points: np.ndarray, cov: np.ndarray, sqrt: bool = False
+) -> np.ndarray:
+    """Return an array made of the mahanalobis distances between each element
+    and the specified point.
 
     Parameters
     ----------
@@ -109,8 +111,8 @@ def mahanalobis_from_point(
 
 
 def _unidim_mahanalobis_from_point(
-    array: ArrayLike, points: ArrayLike, cov: ArrayLike
-) -> ArrayLike:
+    array: np.ndarray, points: np.ndarray, cov: np.ndarray
+) -> np.ndarray:
     """Return mahanalobis distance for a uni-dimensional array.
 
     Parameters
@@ -134,8 +136,8 @@ def _unidim_mahanalobis_from_point(
 
 
 def _multidim_mahanalobis_from_point(
-    array: ArrayLike, points: ArrayLike, cov: ArrayLike
-) -> ArrayLike:
+    array: np.ndarray, points: np.ndarray, cov: np.ndarray
+) -> np.ndarray:
     """Return mahanalobis distance for a multi-dimensional array.
 
     Parameters
@@ -165,7 +167,7 @@ def _multidim_mahanalobis_from_point(
     )
 
 
-def _make_vertical_if_horizontal(array: ArrayLike) -> ArrayLike:
+def _make_vertical_if_horizontal(array: np.ndarray) -> np.ndarray:
     """Return transposed array if array is horizontal."""
     if array.shape[0] < array.shape[1]:
         return array.transpose()

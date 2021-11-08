@@ -21,3 +21,6 @@ debugs.py
 tests/test_data/~$movies.xlsx
 predictions/__pycache__/prediction.cpython-39.pyc
 tests/__pycache__/test_prediction.cpython-39.pyc
+distances/__pycache__/mahalanobis.cpython-39.pyc
+distances/__pycache__/euclidean.cpython-39.pyc
+tests/__pycache__/test_euclidean.cpython-39.pyc

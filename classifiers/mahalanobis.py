@@ -2,7 +2,7 @@ from typing import Union
 
 import numpy as np
 import pandas as pd
-from distances.distance import mahanalobis_from_point, mahanalobis_from_points
+from distances.mahalanobis import mahanalobis_from_points
 from numpy.typing import ArrayLike
 
 

@@ -114,8 +114,31 @@ class TestMahalanobis(TestCase):
     def test_new_categorization(self):
         """Test that new observations are classified correctly."""
         cls = MahalanobisClassifier(self.df1, "IsGood", ["Budget", "Duration"])
+
+        # Distances: Passing 1 new observation
+        new_data = np.array([90, 2810])
         dists = mahanalobis_from_points(
-            np.array([90, 2810]), cls.means_matrix(), cls.cov_matrix(), sqrt=True
+            new_data, cls.means_matrix(), cls.cov_matrix(), sqrt=True
         )
         exp = np.array([[108.86547188, 96.65931728]])
         np.testing.assert_allclose(dists, exp, rtol=1e-5, atol=1e-5)
+
+        # Distances: Passing 2 new observations
+        new_data2 = np.array([[90, 2810], [90, 2810]])
+        dists = mahanalobis_from_points(
+            new_data2, cls.means_matrix(), cls.cov_matrix(), sqrt=True
+        )
+        exp = np.array([[108.86547188, 96.65931728], [108.86547188, 96.65931728]])
+        np.testing.assert_allclose(dists, exp, rtol=1e-5, atol=1e-5)
+
+        # Categorization: Passing 1 new observation
+        classification = cls.categorize_new_data(new_data)
+        pd.testing.assert_series_equal(
+            classification, pd.Series([True], name="Category")
+        )
+
+        # Categorization: Passing 2 new observations
+        classification = cls.categorize_new_data(new_data2)
+        pd.testing.assert_series_equal(
+            classification, pd.Series([True, True], name="Category")
+        )

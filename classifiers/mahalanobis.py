@@ -62,7 +62,7 @@ class MahalanobisClassifier:
 
     # from NEW DATA to CATEGORY
     def categorize_new_data(
-        self, new_data: Union[pd.DataFrame, ArrayLike]
+        self, new_data: Union[pd.DataFrame, ArrayLike], sqrt: bool = False
     ) -> pd.Series:
         """Given a set of data with size (N, K), return a pandas series with length
         N containing the mahanalobis categories for the input data.
@@ -79,6 +79,9 @@ class MahalanobisClassifier:
             If array, it is assumed that the columns match the order of the ones
             in the original data frame. Array's shape must be (N, K), where K
             is the number of columns used for the original centers calculation.
+        sqrt : bool, optional
+            If True, the square root is applied to the distances determining
+            the categorization. By default False.
 
         Returns
         -------
@@ -107,7 +110,7 @@ class MahalanobisClassifier:
             data = data.to_numpy().squeeze()
 
         distances = mahanalobis_from_points(
-            data, self.means_matrix(), self.cov_matrix()
+            data, self.means_matrix(), self.cov_matrix(), sqrt=sqrt
         )
         return self.categories_from_distances(distances)
 

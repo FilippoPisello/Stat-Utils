@@ -73,7 +73,10 @@ class MahalanobisClassifier:
 
     # from EXISTING DATA to CATEGORY
     def categorize_training_data(
-        self, sqrt: bool = False, as_prediction: bool = False
+        self,
+        sqrt: bool = False,
+        validation: Union[str, None] = None,
+        as_prediction: bool = False,
     ) -> Union[pd.Series, Prediction]:
         """Return a pandas series with length N containing the inferred category
         for each observation in the training data frame.
@@ -98,11 +101,26 @@ class MahalanobisClassifier:
             obj.fitted_values is the series described above, while obj.real_values
             is the predicted series from the dataframe.
         """
-        distances = self.distances_from_training_data(sqrt=sqrt)
+        if validation is None:
+            distances = self.distances_from_training_data(sqrt=sqrt)
+        elif validation in ["loo", "leave one out"]:
+            distances = self._loo_distances_training_data(sqrt=sqrt)
+
         categories = self.categories_from_distances(distances)
         if not as_prediction:
             return categories
         return Prediction(categories, self.category_series)
+
+    def _loo_distances_training_data(self, sqrt):
+        distances = np.zeros((self.number_obs, self.number_categories), dtype=float)
+
+        data = self.df.to_numpy()
+        for index, obs in enumerate(data):
+            classifier = MahalanobisClassifier(
+                self.df_all[~self.df_all.index.isin([index])], self.class_col
+            )
+            distances[index, :] = classifier._distances_new_data(obs, sqrt=sqrt)
+        return distances
 
     # from NEW DATA to CATEGORY
     def categorize_new_data(
@@ -147,6 +165,12 @@ class MahalanobisClassifier:
             "Foo" "Bar", then "Foo" "Bar" must be within new_data columns.
 
         """
+        distances = self._distances_new_data(new_data, sqrt)
+        return self.categories_from_distances(distances)
+
+    # form NEW DATA to DISTANCES
+    def _distances_new_data(self, new_data, sqrt):
+        """Return the distances for new data."""
         data = new_data.copy()
         if isinstance(new_data, pd.DataFrame):
             try:
@@ -158,10 +182,9 @@ class MahalanobisClassifier:
                 ) from e
             data = data.to_numpy().squeeze()
 
-        distances = mahanalobis_from_points(
+        return mahanalobis_from_points(
             data, self.means_matrix(), self.cov_matrix(), sqrt=sqrt
         )
-        return self.categories_from_distances(distances)
 
     # from DISTANCES to CATEGORY
     def categories_from_distances(self, distances: np.ndarray) -> pd.Series:

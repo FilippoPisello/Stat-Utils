@@ -115,12 +115,17 @@ class MahalanobisClassifier:
         Parameters
         ----------
         new_data : Union[pd.DataFrame, np.ndarray]
-            The new data to be classified. If pandas dataframe any number of
-            columns is allowed as long as the ones used for centers calculation
-            are present. More on KeyError note down here.
-            If array, it is assumed that the columns match the order of the ones
-            in the original data frame. Array's shape must be (N, K), where K
-            is the number of columns used for the original centers calculation.
+            The new data to be classified.
+
+            If pandas dataframe any number of columns is allowed as long as the
+            ones used for centers calculation are present. More on KeyError note
+            down here.
+
+            If array, its shape must be (N, K), where K is the number of columns
+            used for the original centers calculation. A single observation can
+            also be passed as a 1D array --> [observation].
+            It is assumed that the columns match the order of the ones
+            in the original data frame.
         sqrt : bool, optional
             If True, the square root is applied to the distances determining
             the categorization. By default False.

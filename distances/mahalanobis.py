@@ -100,8 +100,8 @@ def mahanalobis_from_point(
         The array of distances of dimensions (N, 1).
     """
     # Case where uni-dimensional array
-    if array.ndim == 1:
-        distances = _unidim_mahanalobis_from_point(array, points, cov)
+    if array.squeeze().ndim == 1:
+        distances = _unidim_mahanalobis_from_point(array.squeeze(), points, cov)
     # Case where multi-dimensional array
     else:
         distances = _multidim_mahanalobis_from_point(array, points, cov)

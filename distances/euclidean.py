@@ -1,3 +1,4 @@
+"""Contains functions to compute the Euclidean distance"""
 import numpy as np
 
 

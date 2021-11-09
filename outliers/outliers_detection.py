@@ -1,3 +1,4 @@
+"""Contains functions to use on dataframes to detect outliers from series."""
 from typing import Union
 
 import numpy as np

@@ -1,3 +1,6 @@
+"""Contains MahalanobisClassifier class which allows to categorize observations
+based on the computation of the mahanalobis distance from the centers of
+of some data categories."""
 from typing import Union
 
 import numpy as np

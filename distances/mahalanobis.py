@@ -1,3 +1,4 @@
+"""Contains functions to compute the mahanalobis distance."""
 import numpy as np
 
 

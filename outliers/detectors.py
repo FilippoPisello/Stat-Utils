@@ -1,3 +1,5 @@
+"""Contains detector interface and implementations. Detectors provide criteria
+to identify outliers."""
 from dataclasses import dataclass
 from typing import Protocol, Union
 

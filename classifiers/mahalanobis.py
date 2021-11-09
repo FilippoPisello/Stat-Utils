@@ -6,7 +6,6 @@ from typing import Union
 import numpy as np
 import pandas as pd
 from distances.mahalanobis import mahanalobis_from_points
-from numpy.typing import ArrayLike
 
 
 class MahalanobisClassifier:
@@ -19,12 +18,12 @@ class MahalanobisClassifier:
         self.class_col = classifier_col
 
     @property
-    def categories(self) -> ArrayLike:
+    def categories(self) -> np.ndarray:
         """Return the unique values on the classifier column."""
         return self.df_all[self.class_col].unique()
 
     @property
-    def category_series(self) -> ArrayLike:
+    def category_series(self) -> np.ndarray:
         """Return the series of the classifier column"""
         return self.df_all[self.class_col]
 
@@ -65,7 +64,7 @@ class MahalanobisClassifier:
 
     # from NEW DATA to CATEGORY
     def categorize_new_data(
-        self, new_data: Union[pd.DataFrame, ArrayLike], sqrt: bool = False
+        self, new_data: Union[pd.DataFrame, np.ndarray], sqrt: bool = False
     ) -> pd.Series:
         """Given a set of data with size (N, K), return a pandas series with length
         N containing the mahanalobis categories for the input data.
@@ -75,7 +74,7 @@ class MahalanobisClassifier:
 
         Parameters
         ----------
-        new_data : Union[pd.DataFrame, ArrayLike]
+        new_data : Union[pd.DataFrame, np.ndarray]
             The new data to be classified. If pandas dataframe any number of
             columns is allowed as long as the ones used for centers calculation
             are present. More on KeyError note down here.
@@ -118,7 +117,7 @@ class MahalanobisClassifier:
         return self.categories_from_distances(distances)
 
     # from DISTANCES to CATEGORY
-    def categories_from_distances(self, distances: ArrayLike) -> pd.Series:
+    def categories_from_distances(self, distances: np.ndarray) -> pd.Series:
         """Return a pandas series with length N containing the inferred category
         for each element in the distances array.
 
@@ -126,7 +125,7 @@ class MahalanobisClassifier:
 
         Parameters
         ----------
-        distances : ArrayLike
+        distances : np.ndarray
             An array of shape (N, M), containing the distances from M points for
             N observations.
 
@@ -142,7 +141,7 @@ class MahalanobisClassifier:
     # from EXISTING DATA to DISTANCES
     def distances_from_training_data(
         self, sqrt: bool = False, as_dataframe: bool = False
-    ) -> Union[ArrayLike, pd.DataFrame]:
+    ) -> Union[np.ndarray, pd.DataFrame]:
         """Return the distances for each variable from the centers of the groups
         identified by the classifier column.
 
@@ -157,7 +156,7 @@ class MahalanobisClassifier:
 
         Returns
         -------
-        Union[ArrayLike, pd.DataFrame]
+        Union[np.ndarray, pd.DataFrame]
             The result has size (N, M) where N is the number of observations while
             M is the number of groups. Each element (x, y) is the distance between
             observation x and the center of group y, where x = [1, ..., N] and
@@ -175,7 +174,7 @@ class MahalanobisClassifier:
 
     def means_matrix(
         self, as_dataframe: bool = False
-    ) -> Union[ArrayLike, pd.DataFrame]:
+    ) -> Union[np.ndarray, pd.DataFrame]:
         """Return the means with shape (M, K) where K is the number of variables
         and M is the number of different values attained by the classifier col."""
         means_df = self.df_all.groupby(self.class_col)[self.data_columns].mean()
@@ -185,7 +184,7 @@ class MahalanobisClassifier:
 
         return means_df.to_numpy()
 
-    def cov_matrix(self, as_dataframe: bool = False) -> Union[ArrayLike, pd.DataFrame]:
+    def cov_matrix(self, as_dataframe: bool = False) -> Union[np.ndarray, pd.DataFrame]:
         """Return the covariances with shape (M, K, K) where K is the number
         of values and M is the number of different values attained by the
         classifier column.

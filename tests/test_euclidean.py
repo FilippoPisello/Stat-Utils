@@ -46,11 +46,21 @@ class TestEuclidean(TestCase):
         real = euclidean.euclidean_from_center(self.a6)
         exp = np.array([4.422166387140533, 3.0912061651652345, 3.4960294939005054])
         np.testing.assert_allclose(real, exp, rtol=1e-6, atol=1e-6)
+        # With standardization
+        real = euclidean.euclidean_from_center(self.a6, standardized=True)
+        exp = np.array([2.56347978, 2.43486579, 2.34520788])
+        np.testing.assert_allclose(real, exp, rtol=1e-6, atol=1e-6)
 
         # If array is 1D, then it is interpreted as (N, 1), so N observations
         # with 1 variable each
         real = euclidean.euclidean_from_center(self.a1)
         exp = np.array(
             [3.33333333, 2.33333333, 1.33333333, 0.66666667, 1.66666667, 4.66666667]
+        )
+        np.testing.assert_allclose(real, exp, rtol=1e-6, atol=1e-6)
+        # With standardization
+        real = euclidean.euclidean_from_center(self.a1, standardized=True)
+        exp = np.array(
+            [1.24034735, 0.86824314, 0.49613894, 0.24806947, 0.62017367, 1.73648628]
         )
         np.testing.assert_allclose(real, exp, rtol=1e-6, atol=1e-6)

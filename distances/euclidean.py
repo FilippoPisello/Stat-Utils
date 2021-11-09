@@ -1,8 +1,9 @@
 """Contains functions to compute the Euclidean distance"""
 import numpy as np
+from preprocessing.scaling import standardize_array
 
 
-def euclidean_from_center(array: np.ndarray) -> np.ndarray:
+def euclidean_from_center(array: np.ndarray, standardized: bool = False) -> np.ndarray:
     """Return the euclidean distance for each series item from the center of
     the data.
 
@@ -20,6 +21,10 @@ def euclidean_from_center(array: np.ndarray) -> np.ndarray:
 
         If the array is multi dimensional with size (N, K) then it is interpreted
         as N elements with K variables each.
+    standardized : bool, optional
+        If True, the array is standardized before the distance is computed. In
+        this way the standardized euclidean distance is returned. False by
+        default.
 
     Returns
     -------
@@ -27,12 +32,16 @@ def euclidean_from_center(array: np.ndarray) -> np.ndarray:
         An array of size (N, 1) containing the euclidean distances, where
         N is the number of elements in the input array.
     """
+    if standardized:
+        array = standardize_array(array)
     axis = None if array.ndim == 1 else 0
     means = np.mean(array, axis=axis)
     return euclidean_from_point(array, means)
 
 
-def euclidean_from_points(array: np.ndarray, points: np.ndarray) -> np.ndarray:
+def euclidean_from_points(
+    array: np.ndarray, points: np.ndarray, standardized: bool = False
+) -> np.ndarray:
     """Return an array of array made of the euclidean distances between each
     element and each of the specified points.
 
@@ -44,6 +53,10 @@ def euclidean_from_points(array: np.ndarray, points: np.ndarray) -> np.ndarray:
     points : np.array
         The points in respect of which the distance is computed. It must be of
         size (M, K). It contains M arrays with K values each.
+    standardized : bool, optional
+        If True, the array is standardized before the distance is computed. In
+        this way the standardized euclidean distance is returned. False by
+        default.
 
     Returns
     -------
@@ -53,6 +66,8 @@ def euclidean_from_points(array: np.ndarray, points: np.ndarray) -> np.ndarray:
         Each element (x, y) is the euclidean distance of observation x from
         point y, where x=[1, ..., N] and y=[1, ..., M].
     """
+    if standardized:
+        array = standardize_array(array)
     number_of_points = points.shape[0]
 
     # To handle the case where 1-D array is passed
@@ -67,7 +82,9 @@ def euclidean_from_points(array: np.ndarray, points: np.ndarray) -> np.ndarray:
     return result
 
 
-def euclidean_from_point(array: np.ndarray, point: np.ndarray) -> np.ndarray:
+def euclidean_from_point(
+    array: np.ndarray, point: np.ndarray, standardized: bool = False
+) -> np.ndarray:
     """Return an array made of the euclidean distances between each element
     and the specified point.
 
@@ -82,16 +99,21 @@ def euclidean_from_point(array: np.ndarray, point: np.ndarray) -> np.ndarray:
 
         If the array is multi dimensional with size (N, K) then it is interpreted
         as N elements with K variables each.
-
     point : np.array
         The 1-D array identifying the point in respect of which the distance is
         computed. It must have length K.
+    standardized : bool, optional
+        If True, the array is standardized before the distance is computed. In
+        this way the standardized euclidean distance is returned. False by
+        default.
 
     Returns
     -------
     np.ndarray
         The array of distances of dimensions (N, 1).
     """
+    if standardized:
+        array = standardize_array(array)
     # Case where 1D array and point is just a number
     if (array.ndim == 1) & (point.ndim == 0):
         return np.abs(array - point)

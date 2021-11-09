@@ -6,6 +6,7 @@ from typing import Union
 import numpy as np
 import pandas as pd
 from distances.mahalanobis import mahanalobis_from_points
+from predictions.prediction import Prediction
 
 
 class MahalanobisClassifier:
@@ -69,7 +70,9 @@ class MahalanobisClassifier:
         return self.df_all.shape[1]
 
     # from EXISTING DATA to CATEGORY
-    def categorize_training_data(self, sqrt: bool = False) -> pd.Series:
+    def categorize_training_data(
+        self, sqrt: bool = False, as_prediction: bool = False
+    ) -> Union[pd.Series, Prediction]:
         """Return a pandas series with length N containing the inferred category
         for each observation in the training data frame.
 
@@ -78,15 +81,26 @@ class MahalanobisClassifier:
         sqrt : bool, optional
             If True, the square root is applied to the distances determining
             the categorization. By default False.
+        as_prediction : bool, optional
+            If True, the categorization is returned as a prediction object
+            that allows to calculate accuracy metrics. By default False.
 
         Returns
         -------
-        pd.Series
+        Union[pd.Series, Prediction]
+            If as_prediction is False, returns a pd.Series.
             Series of length N. First element contains the category for the first
             observation and so on.
+
+            If as_prediction is True, return a Prediction object, whose attribute
+            obj.fitted_values is the series described above, while obj.real_values
+            is the predicted series from the dataframe.
         """
         distances = self.distances_from_training_data(sqrt=sqrt)
-        return self.categories_from_distances(distances)
+        categories = self.categories_from_distances(distances)
+        if not as_prediction:
+            return categories
+        return Prediction(categories, self.category_series)
 
     # from NEW DATA to CATEGORY
     def categorize_new_data(

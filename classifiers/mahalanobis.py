@@ -13,9 +13,20 @@ class MahalanobisClassifier:
         self, dataframe: pd.DataFrame, classifier_col: str, usecols: list[str] = None
     ):
         self.df_all = dataframe
-        self.data_columns = usecols if usecols is not None else dataframe.columns
-        self.df = dataframe.loc[:, self.data_columns].copy()
         self.class_col = classifier_col
+        self.data_columns = self._identify_data_columns(usecols)
+        self.df = dataframe.loc[:, self.data_columns].copy()
+
+    def _identify_data_columns(
+        self, passed_columns: Union[list[str], None]
+    ) -> list[str]:
+        """Return the correct data columns by excluding the classifier column
+        if passed_columns is not provided."""
+        if passed_columns is not None:
+            return passed_columns
+        output = self.df_all.columns.to_list()
+        output.remove(self.class_col)
+        return output
 
     @property
     def categories(self) -> np.ndarray:

@@ -47,7 +47,9 @@ class MahalanobisClassifier:
     @property
     def categories(self) -> np.ndarray:
         """Return the unique values on the classifier column."""
-        return self.df_all[self.class_col].unique()
+        cats = self.df_all[self.class_col].unique()
+        cats.sort()
+        return cats
 
     @property
     def category_series(self) -> np.ndarray:
@@ -181,7 +183,8 @@ class MahalanobisClassifier:
             observation and so on.
         """
         categories_indexes = pd.Series(np.argmin(distances, axis=1), name="Category")
-        return categories_indexes.apply(lambda x: self.categories[x])
+        cats = self.categories
+        return categories_indexes.apply(lambda x: cats[x])
 
     # from EXISTING DATA to DISTANCES
     def distances_from_training_data(

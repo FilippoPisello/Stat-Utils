@@ -12,6 +12,21 @@ class MahalanobisClassifier:
     def __init__(
         self, dataframe: pd.DataFrame, classifier_col: str, usecols: list[str] = None
     ):
+        """Class to categorize data using the Discriminant Analysis, the
+        technique based on the minimization of Mahalanobis distance.
+
+        Parameters
+        ----------
+        dataframe : pd.DataFrame
+            The pandas dataframe containing the data.
+        classifier_col : str
+            The label of the column in the dataframe that contains the information
+            over the classification.
+        usecols : list[str], optional
+            The list of columns that contain data to be used to assess the
+            distance. If None, all the dataframe columns excluding classifier_col
+            are used.
+        """
         self.df_all = dataframe
         self.class_col = classifier_col
         self.data_columns = self._identify_data_columns(usecols)

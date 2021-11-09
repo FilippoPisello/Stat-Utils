@@ -42,11 +42,15 @@ class TestEuclidean(TestCase):
 
     def test_distance_from_center(self):
         """Test that the distance from center is computed correctly."""
+        # Case with array of size (3, 6)
         real = euclidean.euclidean_from_center(self.a6)
         exp = np.array([4.422166387140533, 3.0912061651652345, 3.4960294939005054])
         np.testing.assert_allclose(real, exp, rtol=1e-6, atol=1e-6)
 
-        # TO UNDERSTAND WHAT TO DO WITH 1D ARRAY
+        # If array is 1D, then it is interpreted as (N, 1), so N observations
+        # with 1 variable each
         real = euclidean.euclidean_from_center(self.a1)
-        exp = np.array([0])
-        np.testing.assert_array_equal(real, exp)
+        exp = np.array(
+            [3.33333333, 2.33333333, 1.33333333, 0.66666667, 1.66666667, 4.66666667]
+        )
+        np.testing.assert_allclose(real, exp, rtol=1e-6, atol=1e-6)

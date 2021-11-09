@@ -6,12 +6,19 @@ def euclidean_from_center(array: np.ndarray) -> np.ndarray:
     the data.
 
     The euclidean distance is the square root of the sum of the squared
-    variable-to-variable distances.
+    variable-to-variable distances. If the number of variables is 1, then it
+    coincides with the difference under absolute value.
 
     Parameters
     ----------
     array : ArrayLike
         The array the distance is to be computed on.
+
+        If the array is one dimensional - array.ndim is equal to 1 - then it is
+        interpreted as N elements with 1 variable.
+
+        If the array is multi dimensional with size (N, K) then it is interpreted
+        as N elements with K variables each.
 
     Returns
     -------
@@ -68,6 +75,13 @@ def euclidean_from_point(array: np.ndarray, point: np.ndarray) -> np.ndarray:
     array : np.array
         The array with size (N, K) the distance is to be computed on. It can be
         either 2-D or 1-D.
+
+        If the array is one dimensional - array.ndim is equal to 1 - then N is
+        considered len(array) with K = 1.
+
+        If the array is multi dimensional with size (N, K) then it is interpreted
+        as N elements with K variables each.
+
     point : np.array
         The 1-D array identifying the point in respect of which the distance is
         computed. It must have length K.
@@ -77,6 +91,9 @@ def euclidean_from_point(array: np.ndarray, point: np.ndarray) -> np.ndarray:
     np.ndarray
         The array of distances of dimensions (N, 1).
     """
+    # Case where 1D array and point is just a number
+    if (array.ndim == 1) & (point.ndim == 0):
+        return np.abs(array - point)
     # Computation is different if the array is uni-dimensional
     axis = None if array.ndim == 1 else 1
     return np.linalg.norm(array - point, axis=axis)

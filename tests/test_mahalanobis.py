@@ -3,8 +3,7 @@ from unittest import TestCase
 import numpy as np
 import pandas as pd
 from classifiers.mahalanobis import MahalanobisClassifier
-from distances.mahalanobis import (mahanalobis_from_center,
-                                   mahanalobis_from_points)
+from distances.mahalanobis import mahanalobis_from_center, mahanalobis_from_points
 
 
 class TestMahalanobis(TestCase):
@@ -170,7 +169,7 @@ class TestMahalanobis(TestCase):
                 True,
             ]
         )
-        res = cls.categorize_training_data(validation="loo", sqrt=True)
+        res = cls.categorize_training_data(validation="loo")
         np.testing.assert_array_equal(res[:40], exp_loo)
 
     def test_new_categorization(self):

@@ -77,7 +77,6 @@ class MahalanobisClassifier:
     # from EXISTING DATA to CATEGORY
     def categorize_training_data(
         self,
-        sqrt: bool = False,
         validation: Union[str, None] = None,
         as_prediction: bool = False,
     ) -> Union[pd.Series, Prediction]:
@@ -86,10 +85,6 @@ class MahalanobisClassifier:
 
         Parameters
         ----------
-        sqrt : bool, optional
-            If True, the square root is applied to the distances determining
-            the categorization. By default False.
-
         validation: str, optional
             If str, the method to be used for validation. If None, no validation
             is applied and direct output is returned. Below the validations
@@ -114,7 +109,7 @@ class MahalanobisClassifier:
             is the predicted series from the dataframe.
         """
         if validation is None:
-            distances = self.distances_training_data(sqrt=sqrt)
+            distances = self.distances_training_data()
         elif validation in ["loo", "leave one out"]:
             distances = leave_one_out_validation(
                 data=self.data,
@@ -123,120 +118,12 @@ class MahalanobisClassifier:
                 full_dataframe=self.df_all,
                 classifier_col=self.class_col,
                 usecols=self.data_columns,
-                sqrt=sqrt,
             )
 
         categories = self.categories_from_distances(distances)
         if not as_prediction:
             return categories
         return Prediction(categories, self.category_series)
-
-    # from EXISTING DATA to DISTANCES
-    @classmethod
-    def _loo_distances_training_data(
-        cls,
-        single_row: np.ndarray,
-        index: int,
-        full_dataframe: pd.DataFrame,
-        classifier_col: str,
-        usecols: list[str],
-        sqrt: bool,
-    ):
-        """Method to be passed to the leave one out validator. It performs
-        each individual loop of the validation."""
-        classifier = cls(
-            dataframe=full_dataframe[~full_dataframe.index.isin([index])],
-            classifier_col=classifier_col,
-            usecols=usecols,
-        )
-        return classifier._distances_new_data(single_row, sqrt=sqrt)
-
-    # from NEW DATA to CATEGORY
-    def categorize_new_data(
-        self, new_data: Union[pd.DataFrame, np.ndarray], sqrt: bool = False
-    ) -> pd.Series:
-        """Given a set of data with size (N, K), return a pandas series with length
-        N containing the mahanalobis categories for the input data.
-
-        The observation is assigned to the category whose center is closest.
-
-
-        Parameters
-        ----------
-        new_data : Union[pd.DataFrame, np.ndarray]
-            The new data to be classified.
-
-            If pandas dataframe any number of columns is allowed as long as the
-            ones used for centers calculation are present. More on KeyError note
-            down here.
-
-            If array, its shape must be (N, K), where K is the number of columns
-            used for the original centers calculation. A single observation can
-            also be passed as a 1D array --> [observation].
-            It is assumed that the columns match the order of the ones
-            in the original data frame.
-        sqrt : bool, optional
-            If True, the square root is applied to the distances determining
-            the categorization. By default False.
-
-        Returns
-        -------
-        pd.Series
-            Series of length N. First element contains the category for the first
-            observation and so on.
-
-        Raises
-        ------
-        KeyError
-            Raised if among the columns of the data provided in data frame the
-            original data columns are not found.
-            Example: if the categories centers were calculated over the columns
-            "Foo" "Bar", then "Foo" "Bar" must be within new_data columns.
-
-        """
-        distances = self._distances_new_data(new_data, sqrt)
-        return self.categories_from_distances(distances)
-
-    # form NEW DATA to DISTANCES
-    def _distances_new_data(self, new_data, sqrt):
-        """Return the distances for new data."""
-        data = new_data.copy()
-        if isinstance(new_data, pd.DataFrame):
-            try:
-                data = data.loc[:, self.data_columns]
-            except KeyError as e:
-                raise KeyError(
-                    """The dataframe with new data must have the same
-                               data columns as the original one"""
-                ) from e
-            data = data.to_numpy().squeeze()
-
-        return mahanalobis_from_points(
-            data, self.means_matrix(), self.cov_matrix(), sqrt=sqrt
-        )
-
-    # from DISTANCES to CATEGORY
-    def categories_from_distances(self, distances: np.ndarray) -> pd.Series:
-        """Return a pandas series with length N containing the inferred category
-        for each element in the distances array.
-
-        The observation is assigned to the category whose center is closest.
-
-        Parameters
-        ----------
-        distances : np.ndarray
-            An array of shape (N, M), containing the distances from M points for
-            N observations.
-
-        Returns
-        -------
-        pd.Series
-            Series of length N. First element contains the category for the first
-            observation and so on.
-        """
-        categories_indexes = pd.Series(np.argmin(distances, axis=1), name="Category")
-        cats = self.categories
-        return categories_indexes.apply(lambda x: cats[x])
 
     # from EXISTING DATA to DISTANCES
     def distances_training_data(
@@ -262,12 +149,145 @@ class MahalanobisClassifier:
             observation x and the center of group y, where x = [1, ..., N] and
             y = [1, ..., M].
         """
+        return self.distances_from_data(self.data, sqrt=sqrt, as_dataframe=as_dataframe)
+
+    # from EXISTING DATA to DISTANCES, for LOO validation
+    @classmethod
+    def _loo_distances_training_data(
+        cls,
+        single_row: np.ndarray,
+        index: int,
+        full_dataframe: pd.DataFrame,
+        classifier_col: str,
+        usecols: list[str],
+    ):
+        """Method to be passed to the leave one out validator. It performs
+        each individual loop of the validation."""
+        classifier = cls(
+            dataframe=full_dataframe[~full_dataframe.index.isin([index])],
+            classifier_col=classifier_col,
+            usecols=usecols,
+        )
+        return classifier.distances_from_data(single_row)
+
+    # from NEW DATA to CATEGORY
+    def categorize_new_data(
+        self, new_data: Union[pd.DataFrame, np.ndarray]
+    ) -> pd.Series:
+        """Given a set of data with size (N, K), return a pandas series with length
+        N containing the mahanalobis categories for the input data.
+
+        The observation is assigned to the category whose center is closest.
+
+
+        Parameters
+        ----------
+        new_data : Union[pd.DataFrame, np.ndarray]
+            The new data to be classified.
+
+            If pandas dataframe any number of columns is allowed as long as the
+            ones used for centers calculation are present. More on KeyError note
+            down here.
+
+            If array, its shape must be (N, K), where K is the number of columns
+            used for the original centers calculation. A single observation can
+            also be passed as a 1D array --> [observation].
+            It is assumed that the columns match the order of the ones
+            in the original data frame.
+
+        Returns
+        -------
+        pd.Series
+            Series of length N. First element contains the category for the first
+            observation and so on.
+
+        Raises
+        ------
+        KeyError
+            Raised if among the columns of the data provided in data frame the
+            original data columns are not found.
+            Example: if the categories centers were calculated over the columns
+            "Foo" "Bar", then "Foo" "Bar" must be within new_data columns.
+
+        """
+        data = self._preprocess_new_data(new_data)
+        distances = self.distances_from_data(data)
+        return self.categories_from_distances(distances)
+
+    # from NEW DATA to NEW DATA
+    def _preprocess_new_data(
+        self, new_data: Union[pd.DataFrame, np.ndarray]
+    ) -> np.ndarray:
+        """Return new_data in numpy form if not numpy, making sure that it is
+        compatible with existing data."""
+        data = new_data.copy()
+        if isinstance(new_data, pd.DataFrame):
+            try:
+                data = data.loc[:, self.data_columns]
+            except KeyError as e:
+                raise KeyError(
+                    """The dataframe with new data must have the same
+                               data columns as the original one"""
+                ) from e
+            data = data.to_numpy().squeeze()
+        return data
+
+    # GENERAL: DATA to DISTANCES
+    def distances_from_data(
+        self, data: np.ndarray, sqrt: bool = False, as_dataframe: bool = False
+    ) -> np.ndarray:
+        """Return the distances for each observation from the centers of the groups
+        identified by the classifier column.
+
+        Parameters
+        ----------
+        data: np.ndarray
+            The numpy array of size (N, K) containing the data to calculate the
+            distances for.
+        sqrt : bool, optional
+            If True, the square root is applied to the distances. By default False.
+        as_dataframe : bool, optional
+            If True, return the distances in data frame form. Each column matches
+            a value from the classifier while each row matches an observation.
+            By default False.
+
+        Returns
+        -------
+        Union[np.ndarray, pd.DataFrame]
+            The result has size (N, M) where N is the number of observations while
+            M is the number of groups. Each element (x, y) is the distance between
+            observation x and the center of group y, where x = [1, ..., N] and
+            y = [1, ..., M].
+        """
         distances = mahanalobis_from_points(
-            self.data, self.means_matrix(), self.cov_matrix(), sqrt
+            data, self.means_matrix(), self.cov_matrix(), sqrt=sqrt
         )
         if as_dataframe:
             return pd.DataFrame(distances, columns=self.categories)
         return distances
+
+    # GENERAL: from DISTANCES to CATEGORY
+    def categories_from_distances(self, distances: np.ndarray) -> pd.Series:
+        """Return a pandas series with length N containing the inferred category
+        for each element in the distances array.
+
+        The observation is assigned to the category whose center is closest.
+
+        Parameters
+        ----------
+        distances : np.ndarray
+            An array of shape (N, M), containing the distances from M points for
+            N observations.
+
+        Returns
+        -------
+        pd.Series
+            Series of length N. First element contains the category for the first
+            observation and so on.
+        """
+        categories_indexes = pd.Series(np.argmin(distances, axis=1), name="Category")
+        cats = self.categories
+        return categories_indexes.apply(lambda x: cats[x])
 
     def means_matrix(
         self, as_dataframe: bool = False

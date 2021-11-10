@@ -39,9 +39,11 @@ class MahalanobisClassifier:
         """Return the correct data columns by excluding the classifier column
         if passed_columns is not provided."""
         if passed_columns is not None:
+            passed_columns.sort()
             return passed_columns
         output = self.df_all.columns.to_list()
         output.remove(self.class_col)
+        output.sort()
         return output
 
     @property

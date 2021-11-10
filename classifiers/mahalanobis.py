@@ -31,7 +31,7 @@ class MahalanobisClassifier:
         self.df_all = dataframe
         self.class_col = classifier_col
         self.data_columns = self._identify_data_columns(usecols)
-        self.df = dataframe.loc[:, self.data_columns].copy()
+        self.data = dataframe.loc[:, self.data_columns].to_numpy()
 
     def _identify_data_columns(
         self, passed_columns: Union[list[str], None]
@@ -212,7 +212,7 @@ class MahalanobisClassifier:
         return categories_indexes.apply(lambda x: cats[x])
 
     # from EXISTING DATA to DISTANCES
-    def distances_from_training_data(
+    def distances_training_data(
         self, sqrt: bool = False, as_dataframe: bool = False
     ) -> Union[np.ndarray, pd.DataFrame]:
         """Return the distances for each variable from the centers of the groups
@@ -235,15 +235,12 @@ class MahalanobisClassifier:
             observation x and the center of group y, where x = [1, ..., N] and
             y = [1, ..., M].
         """
-        data = self.df.loc[:, self.data_columns].to_numpy()
-        dists = mahanalobis_from_points(
-            data, self.means_matrix(), self.cov_matrix(), sqrt
+        distances = mahanalobis_from_points(
+            self.data, self.means_matrix(), self.cov_matrix(), sqrt
         )
         if as_dataframe:
-            dataframe = pd.DataFrame(dists)
-            dataframe.columns = self.categories
-            return dataframe
-        return dists
+            return pd.DataFrame(distances, columns=self.categories)
+        return distances
 
     def means_matrix(
         self, as_dataframe: bool = False

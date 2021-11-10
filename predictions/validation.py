@@ -1,6 +1,7 @@
 from typing import Any, Callable
 
 import numpy as np
+from tqdm import tqdm
 
 
 def leave_one_out_validation(
@@ -44,7 +45,7 @@ def leave_one_out_validation(
     """
     output = np.zeros(output_shape, dtype=float)
 
-    for index, obs in enumerate(data):
+    for index, obs in enumerate(tqdm(data)):
         output[index, :] = loo_class_callable(
             single_row=obs, index=index, **methods_parameters
         )

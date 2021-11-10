@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 from distances.mahalanobis import mahanalobis_from_points
 from predictions.prediction import Prediction
+from predictions.validation import leave_one_out_validation
 
 
 class MahalanobisClassifier:
@@ -88,6 +89,15 @@ class MahalanobisClassifier:
         sqrt : bool, optional
             If True, the square root is applied to the distances determining
             the categorization. By default False.
+
+        validation: str, optional
+            If str, the method to be used for validation. If None, no validation
+            is applied and direct output is returned. Below the validations
+            available:
+            "loo" or "leave one out": leave one out validation. Each category
+            is derived by using every other observation in the dataframe and
+            passing the single excluded item as new data.
+
         as_prediction : bool, optional
             If True, the categorization is returned as a prediction object
             that allows to calculate accuracy metrics. By default False.
@@ -104,25 +114,42 @@ class MahalanobisClassifier:
             is the predicted series from the dataframe.
         """
         if validation is None:
-            distances = self.distances_from_training_data(sqrt=sqrt)
+            distances = self.distances_training_data(sqrt=sqrt)
         elif validation in ["loo", "leave one out"]:
-            distances = self._loo_distances_training_data(sqrt=sqrt)
+            distances = leave_one_out_validation(
+                data=self.data,
+                output_shape=(self.number_obs, self.number_categories),
+                loo_class_callable=self._loo_distances_training_data,
+                full_dataframe=self.df_all,
+                classifier_col=self.class_col,
+                usecols=self.data_columns,
+                sqrt=sqrt,
+            )
 
         categories = self.categories_from_distances(distances)
         if not as_prediction:
             return categories
         return Prediction(categories, self.category_series)
 
-    def _loo_distances_training_data(self, sqrt):
-        distances = np.zeros((self.number_obs, self.number_categories), dtype=float)
-
-        data = self.df.to_numpy()
-        for index, obs in enumerate(data):
-            classifier = MahalanobisClassifier(
-                self.df_all[~self.df_all.index.isin([index])], self.class_col
-            )
-            distances[index, :] = classifier._distances_new_data(obs, sqrt=sqrt)
-        return distances
+    # from EXISTING DATA to DISTANCES
+    @classmethod
+    def _loo_distances_training_data(
+        cls,
+        single_row: np.ndarray,
+        index: int,
+        full_dataframe: pd.DataFrame,
+        classifier_col: str,
+        usecols: list[str],
+        sqrt: bool,
+    ):
+        """Method to be passed to the leave one out validator. It performs
+        each individual loop of the validation."""
+        classifier = cls(
+            dataframe=full_dataframe[~full_dataframe.index.isin([index])],
+            classifier_col=classifier_col,
+            usecols=usecols,
+        )
+        return classifier._distances_new_data(single_row, sqrt=sqrt)
 
     # from NEW DATA to CATEGORY
     def categorize_new_data(

@@ -3,7 +3,8 @@ from unittest import TestCase
 import numpy as np
 import pandas as pd
 from classifiers.mahalanobis import MahalanobisClassifier
-from distances.mahalanobis import mahanalobis_from_center, mahanalobis_from_points
+from distances.mahalanobis import (mahanalobis_from_center,
+                                   mahanalobis_from_points)
 
 
 class TestMahalanobis(TestCase):
@@ -111,11 +112,66 @@ class TestMahalanobis(TestCase):
         res = cls.categorize_training_data()
         np.testing.assert_array_equal(res[:20], exp)
 
+        # Check that if inverting the classification the result is inverted
+        # as expected
         df1_mod = self.df1.copy()
         df1_mod["IsGood"] = ~df1_mod["IsGood"]
-        cls = MahalanobisClassifier(df1_mod, "IsGood", ["Budget", "Duration"])
-        res = cls.categorize_training_data()
+        cls1 = MahalanobisClassifier(df1_mod, "IsGood", ["Budget", "Duration"])
+        res = cls1.categorize_training_data()
         np.testing.assert_array_equal(res[:20], ~exp)
+
+        # Check that if columns are inverted result is still the same
+        cls2 = MahalanobisClassifier(self.df1, "IsGood", ["Duration", "Budget"])
+        res = cls2.categorize_training_data()
+        np.testing.assert_array_equal(res[:20], exp)
+
+        # Check leave-one-out validation
+        exp_loo = np.array(
+            [
+                True,
+                True,
+                False,
+                False,
+                True,
+                True,
+                True,
+                True,
+                False,
+                False,
+                True,
+                False,
+                False,
+                True,
+                True,
+                True,
+                False,
+                True,
+                True,
+                True,
+                False,
+                True,
+                True,
+                False,
+                True,
+                True,
+                True,
+                False,
+                True,
+                False,
+                False,
+                False,
+                True,
+                True,
+                False,
+                True,
+                False,
+                True,
+                False,
+                True,
+            ]
+        )
+        res = cls.categorize_training_data(validation="loo", sqrt=True)
+        np.testing.assert_array_equal(res[:40], exp_loo)
 
     def test_new_categorization(self):
         """Test that new observations are classified correctly."""

@@ -115,9 +115,6 @@ class MahalanobisClassifier:
                 data=self.data,
                 output_shape=(self.number_obs, self.number_categories),
                 loo_class_callable=self._loo_distances_training_data,
-                full_dataframe=self.df_all,
-                classifier_col=self.class_col,
-                usecols=self.data_columns,
             )
 
         categories = self.categories_from_distances(distances)
@@ -154,23 +151,15 @@ class MahalanobisClassifier:
         )
 
     # from EXISTING DATA to DISTANCES, for LOO validation
-    @classmethod
-    def _loo_distances_training_data(
-        cls,
-        single_row: np.ndarray,
-        index: int,
-        full_dataframe: pd.DataFrame,
-        classifier_col: str,
-        usecols: list[str],
-    ):
+    def _loo_distances_training_data(self, single_row: np.ndarray, index: int):
         """Method to be passed to the leave one out validator. It performs
         each individual loop of the validation."""
-        classifier = cls(
-            dataframe=full_dataframe[~full_dataframe.index.isin([index])],
-            classifier_col=classifier_col,
-            usecols=usecols,
+        classifier = MahalanobisClassifier(
+            dataframe=self.df_all[~self.df_all.index.isin([index])],
+            classifier_col=self.class_col,
+            usecols=self.data_columns,
         )
-        return classifier.distances_from_data(single_row)
+        return classifier.distances_from_centers(single_row)
 
     # from NEW DATA to CATEGORY
     def categorize_new_data(

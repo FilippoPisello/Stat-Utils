@@ -32,3 +32,4 @@ tests/__pycache__/test_hamming.cpython-39.pyc
 predictions/__pycache__/validation.cpython-39.pyc
 classifiers/__pycache__/kneighbors.cpython-39.pyc
 tests/__pycache__/test_kneighbors.cpython-39.pyc
+classifiers/__pycache__/classifier.cpython-39.pyc

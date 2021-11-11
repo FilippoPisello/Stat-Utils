@@ -9,8 +9,10 @@ from distances.mahalanobis import mahanalobis_from_points
 from predictions.prediction import Prediction
 from predictions.validation import leave_one_out_validation
 
+from classifiers.classifier import Classifier
 
-class MahalanobisClassifier:
+
+class MahalanobisClassifier(Classifier):
     def __init__(
         self, dataframe: pd.DataFrame, classifier_col: str, usecols: list[str] = None
     ):
@@ -21,58 +23,17 @@ class MahalanobisClassifier:
         ----------
         dataframe : pd.DataFrame
             The pandas dataframe containing the data.
+
         classifier_col : str
             The label of the column in the dataframe that contains the information
             over the classification.
+
         usecols : list[str], optional
             The list of columns that contain data to be used to assess the
             distance. If None, all the dataframe columns excluding classifier_col
             are used.
         """
-        self.df_all = dataframe
-        self.class_col = classifier_col
-        self.data_columns = self._identify_data_columns(usecols)
-        self.data = dataframe.loc[:, self.data_columns].to_numpy()
-
-    def _identify_data_columns(
-        self, passed_columns: Union[list[str], None]
-    ) -> list[str]:
-        """Return the correct data columns by excluding the classifier column
-        if passed_columns is not provided."""
-        if passed_columns is not None:
-            passed_columns.sort()
-            return passed_columns
-        output = self.df_all.columns.to_list()
-        output.remove(self.class_col)
-        output.sort()
-        return output
-
-    @property
-    def categories(self) -> pd.Series:
-        """Return the unique values on the classifier column."""
-        cats = self.df_all[self.class_col].unique()
-        cats.sort()
-        return cats
-
-    @property
-    def category_series(self) -> pd.Series:
-        """Return the series of the classifier column"""
-        return self.df_all[self.class_col]
-
-    @property
-    def number_categories(self) -> int:
-        """Return the number of unique values in the classifier column."""
-        return len(self.categories)
-
-    @property
-    def number_obs(self) -> int:
-        """Return the number of observations in the data frame."""
-        return self.df_all.shape[0]
-
-    @property
-    def number_vars(self) -> int:
-        """Return the number of variables in the data frame."""
-        return self.df_all.shape[1]
+        super().__init__(dataframe, classifier_col, usecols)
 
     # from EXISTING DATA to CATEGORY
     def categorize_training_data(

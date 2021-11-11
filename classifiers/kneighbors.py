@@ -7,8 +7,10 @@ from predictions.prediction import Prediction
 from predictions.validation import leave_one_out_validation
 from preprocessing.scaling import standardize_array
 
+from classifiers.classifier import Classifier
 
-class KNeighborsClassifier:
+
+class KNeighborsClassifier(Classifier):
     def __init__(
         self,
         dataframe: pd.DataFrame,
@@ -16,63 +18,9 @@ class KNeighborsClassifier:
         usecols: list[str] = None,
         standardize: bool = True,
     ):
-        self.df_all = dataframe
-        self.class_col = classifier_col
-        self.data_columns = self._identify_data_columns(usecols)
+        super().__init__(dataframe, classifier_col, usecols)
         # Predictors and outcomes as numpy arrays
-        self.raw_data, self.data = self._preprocess_predictors(standardize)
-        self.outcomes = self._preprocess_outcomes()
-
-    def _identify_data_columns(
-        self, passed_columns: Union[list[str], None]
-    ) -> list[str]:
-        """Return the correct data columns by excluding the classifier column
-        if passed_columns is not provided."""
-        if passed_columns is not None:
-            passed_columns.sort()
-            return passed_columns
-        output = self.df_all.columns.to_list()
-        output.remove(self.class_col)
-        output.sort()
-        return output
-
-    def _preprocess_predictors(
-        self, standardize: bool
-    ) -> tuple[np.ndarray, np.ndarray]:
-        data = self.df_all.loc[:, self.data_columns].to_numpy()
-        if standardize:
-            return data, standardize_array(data)
-        return data, data
-
-    def _preprocess_outcomes(self) -> np.ndarray:
-        return self.df_all[self.class_col].to_numpy().reshape(self.data.shape[0], 1)
-
-    @property
-    def categories(self) -> np.ndarray:
-        """Return the unique values on the classifier column."""
-        cats = self.df_all[self.class_col].unique()
-        cats.sort()
-        return cats
-
-    @property
-    def category_series(self) -> np.ndarray:
-        """Return the series of the classifier column"""
-        return self.df_all[self.class_col]
-
-    @property
-    def number_categories(self) -> int:
-        """Return the number of unique values in the classifier column."""
-        return len(self.categories)
-
-    @property
-    def number_obs(self) -> int:
-        """Return the number of observations in the data frame."""
-        return self.df_all.shape[0]
-
-    @property
-    def number_vars(self) -> int:
-        """Return the number of variables in the data frame."""
-        return self.df_all.shape[1]
+        self.std_data = standardize_array(self.data) if standardize else self.data
 
     def categorize_training_data(
         self,
@@ -82,7 +30,7 @@ class KNeighborsClassifier:
     ) -> Union[pd.Series, Prediction]:
         if validation in ["loo", "leave one out"]:
             categories = leave_one_out_validation(
-                data=self.raw_data,
+                data=self.data,
                 loo_class_callable=self._loo_distances_training_data,
                 output_shape=(self.number_obs, 1),
                 output_type=self.category_series.dtype,
@@ -279,7 +227,7 @@ class KNeighborsClassifier:
         """
         if standardize:
             data = (data - self.means()) / self.stds()
-        return euclidean_from_point(self.data, data)
+        return euclidean_from_point(self.std_data, data)
 
     def stds(self, as_series: bool = False):
         stds = self.df_all.loc[:, self.data_columns].std(axis=0)

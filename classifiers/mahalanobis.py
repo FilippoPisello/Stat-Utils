@@ -48,14 +48,14 @@ class MahalanobisClassifier:
         return output
 
     @property
-    def categories(self) -> np.ndarray:
+    def categories(self) -> pd.Series:
         """Return the unique values on the classifier column."""
         cats = self.df_all[self.class_col].unique()
         cats.sort()
         return cats
 
     @property
-    def category_series(self) -> np.ndarray:
+    def category_series(self) -> pd.Series:
         """Return the series of the classifier column"""
         return self.df_all[self.class_col]
 

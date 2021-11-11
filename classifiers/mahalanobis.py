@@ -149,7 +149,9 @@ class MahalanobisClassifier:
             observation x and the center of group y, where x = [1, ..., N] and
             y = [1, ..., M].
         """
-        return self.distances_from_data(self.data, sqrt=sqrt, as_dataframe=as_dataframe)
+        return self.distances_from_centers(
+            self.data, sqrt=sqrt, as_dataframe=as_dataframe
+        )
 
     # from EXISTING DATA to DISTANCES, for LOO validation
     @classmethod
@@ -211,7 +213,7 @@ class MahalanobisClassifier:
 
         """
         data = self._preprocess_new_data(new_data)
-        distances = self.distances_from_data(data)
+        distances = self.distances_from_centers(data)
         return self.categories_from_distances(distances)
 
     # from NEW DATA to NEW DATA
@@ -232,8 +234,31 @@ class MahalanobisClassifier:
             data = data.to_numpy().squeeze()
         return data
 
+    # GENERAL: from DISTANCES to CATEGORY
+    def categories_from_distances(self, distances: np.ndarray) -> pd.Series:
+        """Return a pandas series with length N containing the inferred category
+        for each element in the distances array.
+
+        The observation is assigned to the category whose center is closest.
+
+        Parameters
+        ----------
+        distances : np.ndarray
+            An array of shape (N, M), containing the distances from M points for
+            N observations.
+
+        Returns
+        -------
+        pd.Series
+            Series of length N. First element contains the category for the first
+            observation and so on.
+        """
+        categories_indexes = pd.Series(np.argmin(distances, axis=1), name="Category")
+        cats = self.categories
+        return categories_indexes.apply(lambda x: cats[x])
+
     # GENERAL: DATA to DISTANCES
-    def distances_from_data(
+    def distances_from_centers(
         self, data: np.ndarray, sqrt: bool = False, as_dataframe: bool = False
     ) -> np.ndarray:
         """Return the distances for each observation from the centers of the groups
@@ -265,29 +290,6 @@ class MahalanobisClassifier:
         if as_dataframe:
             return pd.DataFrame(distances, columns=self.categories)
         return distances
-
-    # GENERAL: from DISTANCES to CATEGORY
-    def categories_from_distances(self, distances: np.ndarray) -> pd.Series:
-        """Return a pandas series with length N containing the inferred category
-        for each element in the distances array.
-
-        The observation is assigned to the category whose center is closest.
-
-        Parameters
-        ----------
-        distances : np.ndarray
-            An array of shape (N, M), containing the distances from M points for
-            N observations.
-
-        Returns
-        -------
-        pd.Series
-            Series of length N. First element contains the category for the first
-            observation and so on.
-        """
-        categories_indexes = pd.Series(np.argmin(distances, axis=1), name="Category")
-        cats = self.categories
-        return categories_indexes.apply(lambda x: cats[x])
 
     def means_matrix(
         self, as_dataframe: bool = False

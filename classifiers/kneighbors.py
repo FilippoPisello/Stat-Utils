@@ -18,16 +18,111 @@ class KNeighborsClassifier(Classifier):
         usecols: list[str] = None,
         standardize: bool = True,
     ):
+        """Class to categorize data using the K-Neighbors-Classification. The
+        technique identifies the K nearest observation from the element
+        considered and infers its category from the neighbors' categories.
+
+        As an example, if one is classifying "Good" and "Bad" students, if 4 out
+        of the 5 considered neighbors are labeled as "Good", than "Good" is
+        inferred.
+
+        Parameters
+        ----------
+        dataframe : pd.DataFrame
+            The pandas dataframe containing the data.
+
+        classifier_col : str
+            The label of the column in the dataframe that contains the information
+            over the classification.
+
+        usecols : list[str], optional
+            The list of columns that contain data to be used to assess the
+            distance. If None, all the dataframe columns excluding classifier_col
+            are used.
+
+        standardize: bool, optional
+            If True, the data used to compute the distances - thus the predictors
+            - is standardized. This technique presupposes data to be standardized
+            so this parameter should be set to True unless the data is not
+            already standardized. By default, True.
+        """
         super().__init__(dataframe, classifier_col, usecols)
         # Predictors and outcomes as numpy arrays
         self.std_data = standardize_array(self.data) if standardize else self.data
 
+    def neighbors_performance(
+        self,
+        neighbors_to_test: list[int] = range(1, 11),
+        validation: str = "leave one out",
+    ) -> pd.DataFrame:
+        """Return a dataframe containing the accuracy achieved over the training
+        set for each of the number of neighbors passed with the parameter
+        neighbors_to_test.
+
+        Parameters
+        ----------
+        neighbors_to_test : list, optional
+            A list of integers representing the number of neighbors the algorithm
+            accuracy is to be tested with. By default range(1, 11)
+        validation : str, optional
+            The validation technique to be used to compute the distances. By
+            default "leave one out".
+
+        Returns
+        -------
+        pd.DataFrame
+            A dataframe of shape (N, 2) where N is the length of the list
+            passed as neighbors_to_test. The first columns contains the number
+            of neighbors tested and the second columns contains the accuracy
+            of the result.
+        """
+        accuracy = [
+            self.categorize_training_data(
+                validation=validation, as_prediction=True, n_neighbors=number
+            ).accuracy_score
+            for number in neighbors_to_test
+        ]
+        return pd.DataFrame(
+            {"Neighbors Considered": neighbors_to_test, "Accuracy": accuracy}
+        )
+
     def categorize_training_data(
         self,
+        n_neighbors: int = 5,
         validation: str = "leave one out",
         as_prediction: bool = False,
-        n_neighbors: int = 5,
     ) -> Union[pd.Series, Prediction]:
+        """Return the inferred category for each observations in the training
+        data frame.
+
+        Parameters
+        ----------
+        n_neighbors : int, optional
+            The number of neighbors to be used to infer the categories,
+            by default 5.
+
+        validation : str, optional
+            If str, the method to be used for validation.
+
+            "loo" or "leave one out": leave one out validation. Each category
+            is derived by using every other observation in the dataframe and
+            passing the single excluded item as new data.
+
+        as_prediction : bool, optional
+            If True, the categorization is returned as a prediction object
+            that allows to calculate accuracy metrics. By default False.
+
+        Returns
+        -------
+        Union[pd.Series, Prediction]
+            If as_prediction is False, returns a pd.Series.
+            Series of length N. First element contains the category for the first
+            observation and so on.
+
+            If as_prediction is True, return a Prediction object, whose attribute
+            obj.fitted_values is the series described above, while obj.real_values
+            is the predicted series from the dataframe.
+        """
         if validation in ["loo", "leave one out"]:
             categories = leave_one_out_validation(
                 data=self.data,
@@ -229,13 +324,46 @@ class KNeighborsClassifier(Classifier):
             data = (data - self.means()) / self.stds()
         return euclidean_from_point(self.std_data, data)
 
-    def stds(self, as_series: bool = False):
+    def stds(self, as_series: bool = False) -> Union[np.ndarray, pd.Series]:
+        """Return the means for each of the columns in the dataset used to
+        compute the distances.
+
+        Parameters
+        ----------
+        as_series : bool, optional
+            If True, the means are returned as pandas series. Otherwise, means
+            are returned as numpy arrays, by default False.
+
+        Returns
+        -------
+        Union[np.ndarray, pd.Series]
+            An object with shape (K,) where K is the number of columns used
+            to compute the distance. The type depends on the parameter
+            as_series.
+        """
         stds = self.df_all.loc[:, self.data_columns].std(axis=0)
         if as_series:
             return stds
         return stds.to_numpy()
 
-    def means(self, as_series: bool = False):
+    def means(self, as_series: bool = False) -> Union[np.ndarray, pd.Series]:
+        """Return the standard deviations for each of the columns in the dataset
+        used to compute the distances.
+
+        Parameters
+        ----------
+        as_series : bool, optional
+            If True, the standard deviations are returned as pandas series.
+            Otherwise, standard deviations are returned as numpy arrays, by
+            default False.
+
+        Returns
+        -------
+        Union[np.ndarray, pd.Series]
+            An object with shape (K,) where K is the number of columns used
+            to compute the distance. The type depends on the parameter
+            as_series.
+        """
         means = self.df_all.loc[:, self.data_columns].mean(axis=0)
         if as_series:
             return means

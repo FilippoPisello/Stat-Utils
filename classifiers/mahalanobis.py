@@ -220,8 +220,8 @@ class MahalanobisClassifier:
                     """The dataframe with new data must have the same
                                data columns as the original one"""
                 ) from e
-            data = data.to_numpy().squeeze()
-        return data
+            data = data.to_numpy()
+        return data.squeeze()
 
     # GENERAL: from DISTANCES to CATEGORY
     def categories_from_distances(self, distances: np.ndarray) -> pd.Series:

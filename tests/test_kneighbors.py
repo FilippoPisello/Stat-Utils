@@ -7,13 +7,27 @@ from classifiers.kneighbors import KNeighborsClassifier
 
 class TestKneighbors(TestCase):
     df = pd.read_excel("tests/test_data/admissions.xlsx")
+    cls = KNeighborsClassifier(df, "De", standardize=True)
+
     # THE PROCESS IS STOCHASTIC SO A SEED IS NEEDED
     np.random.seed(9999)
 
+    def test_neighbors(self):
+        new_data = np.array([313.0, 3.15])
+
+        for number in range(1, 10):
+            dist = self.cls.distances_from_observations(new_data, standardize=True)
+            neigh = self.cls.neighbors_from_distances(dist, n_neighbors=number)
+            self.assertEqual(len(neigh), number)
+
+    def test_means(self):
+        res = self.cls.means()
+        exp = np.array([488.44705882, 2.97458824])
+        np.testing.assert_allclose(res, exp, rtol=1e-5, atol=1e-5)
+
     def test_looclassification(self):
         # Test various numbers of neighbors
-        cls = KNeighborsClassifier(self.df, "De", standardize=True)
-        res = cls.categorize_training_data(n_neighbors=5)
+        res = self.cls.categorize_training_data(n_neighbors=5)
         exp = pd.Series(
             [
                 "admit",
@@ -105,8 +119,7 @@ class TestKneighbors(TestCase):
         )
         pd.testing.assert_series_equal(res, exp)
 
-        cls1 = KNeighborsClassifier(self.df, "De", standardize=True)
-        res1 = cls1.categorize_training_data(n_neighbors=10)
+        res1 = self.cls.categorize_training_data(n_neighbors=10)
         exp1 = pd.Series(
             [
                 "admit",
@@ -197,6 +210,98 @@ class TestKneighbors(TestCase):
             ]
         )
         pd.testing.assert_series_equal(res1, exp1)
+
+        res3 = self.cls.categorize_training_data(n_neighbors=3)
+        exp3 = pd.Series(
+            [
+                "admit",
+                "admit",
+                "admit",
+                "admit",
+                "admit",
+                "admit",
+                "admit",
+                "admit",
+                "admit",
+                "admit",
+                "admit",
+                "admit",
+                "admit",
+                "admit",
+                "admit",
+                "admit",
+                "admit",
+                "admit",
+                "admit",
+                "admit",
+                "admit",
+                "admit",
+                "admit",
+                "admit",
+                "admit",
+                "admit",
+                "admit",
+                "admit",
+                "admit",
+                "admit",
+                "admit",
+                "notadmit",
+                "notadmit",
+                "notadmit",
+                "notadmit",
+                "notadmit",
+                "notadmit",
+                "notadmit",
+                "notadmit",
+                "notadmit",
+                "notadmit",
+                "notadmit",
+                "notadmit",
+                "notadmit",
+                "notadmit",
+                "notadmit",
+                "notadmit",
+                "notadmit",
+                "notadmit",
+                "notadmit",
+                "notadmit",
+                "notadmit",
+                "notadmit",
+                "notadmit",
+                "notadmit",
+                "notadmit",
+                "notadmit",
+                "notadmit",
+                "notadmit",
+                "border",
+                "border",
+                "border",
+                "border",
+                "border",
+                "notadmit",
+                "admit",
+                "border",
+                "border",
+                "border",
+                "border",
+                "border",
+                "border",
+                "border",
+                "notadmit",
+                "border",
+                "border",
+                "border",
+                "border",
+                "border",
+                "border",
+                "border",
+                "border",
+                "border",
+                "border",
+                "border",
+            ]
+        )
+        pd.testing.assert_series_equal(res3, exp3)
 
         # Test that the result is invariant from alphabetic order
         exp2 = exp.replace("admit", "zadmit")

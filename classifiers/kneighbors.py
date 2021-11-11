@@ -20,7 +20,7 @@ class KNeighborsClassifier:
         self.class_col = classifier_col
         self.data_columns = self._identify_data_columns(usecols)
         # Predictors and outcomes as numpy arrays
-        self.data = self._preprocess_predictors(standardize)
+        self.raw_data, self.data = self._preprocess_predictors(standardize)
         self.outcomes = self._preprocess_outcomes()
 
     def _identify_data_columns(
@@ -36,11 +36,13 @@ class KNeighborsClassifier:
         output.sort()
         return output
 
-    def _preprocess_predictors(self, standardize: bool) -> np.ndarray:
+    def _preprocess_predictors(
+        self, standardize: bool
+    ) -> tuple[np.ndarray, np.ndarray]:
         data = self.df_all.loc[:, self.data_columns].to_numpy()
         if standardize:
-            return standardize_array(data)
-        return data
+            return data, standardize_array(data)
+        return data, data
 
     def _preprocess_outcomes(self) -> np.ndarray:
         return self.df_all[self.class_col].to_numpy().reshape(self.data.shape[0], 1)
@@ -80,7 +82,7 @@ class KNeighborsClassifier:
     ) -> Union[pd.Series, Prediction]:
         if validation in ["loo", "leave one out"]:
             categories = leave_one_out_validation(
-                data=self.data,
+                data=self.raw_data,
                 loo_class_callable=self._loo_distances_training_data,
                 output_shape=(self.number_obs, 1),
                 output_type=self.category_series.dtype,
@@ -280,11 +282,13 @@ class KNeighborsClassifier:
         return euclidean_from_point(self.data, data)
 
     def stds(self, as_series: bool = False):
+        stds = self.df_all.loc[:, self.data_columns].std(axis=0)
         if as_series:
-            return self.df_all.loc[:, self.data_columns].std(axis=0)
-        return self.data.std(axis=0)
+            return stds
+        return stds.to_numpy()
 
     def means(self, as_series: bool = False):
+        means = self.df_all.loc[:, self.data_columns].mean(axis=0)
         if as_series:
-            return self.df_all.loc[:, self.data_columns].mean(axis=0)
-        return self.data.mean(axis=0)
+            return means
+        return means.to_numpy()

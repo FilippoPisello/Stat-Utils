@@ -127,8 +127,6 @@ class KNeighborsClassifier(Classifier):
             categories = leave_one_out_validation(
                 data=self.data,
                 loo_class_callable=self._loo_distances_training_data,
-                output_shape=(self.number_obs, 1),
-                output_type=self.category_series.dtype,
                 n_neighbors=n_neighbors,
             )
             categories = pd.Series(categories.squeeze())

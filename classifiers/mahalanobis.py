@@ -75,8 +75,6 @@ class MahalanobisClassifier(Classifier):
             distances = leave_one_out_validation(
                 data=self.data,
                 loo_class_callable=self._loo_distances_training_data,
-                output_shape=(self.number_obs, self.number_categories),
-                output_type=float,
             )
 
         categories = self.categories_from_distances(distances)

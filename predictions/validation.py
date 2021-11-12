@@ -7,8 +7,6 @@ from tqdm import tqdm
 def leave_one_out_validation(
     data: np.ndarray,
     loo_class_callable: Callable[[np.ndarray, int, Any], np.ndarray],
-    output_shape: tuple[int, int],
-    output_type: Any = float,
     **methods_parameters: Any
 ) -> np.ndarray:
     """Return the output of a prediction function by applying the leave one out
@@ -34,27 +32,18 @@ def leave_one_out_validation(
         array of length K representing the single observation. Its second
         argument must be index, integer for the index of the observation.
 
-    output_shape : tuple[int, int]
-        The size of the output array. If dimensions (X, Y) is passed, the output
-        of loo_class_method should be either a 2D array of size (1, Y) or a 1D
-        array of length Y.
-
-    output_type : type
-        The expected type of the data to be stored into the output. By default,
-        float.
-
     **methods_parameters : Any
         Keyword arguments that are directly passed to loo_class_callable.
 
     Returns
     -------
     np.ndarray
-        The array with the predictions with dimension (X, Y).
+        The array with the predictions with dimension (X, Y). The array is
+        squeezed before being returned.
     """
-    output = np.zeros(output_shape, dtype=output_type)
-
-    for index, obs in enumerate(tqdm(data)):
-        output[index, :] = loo_class_callable(
-            single_row=obs, index=index, **methods_parameters
-        )
-    return output
+    return np.array(
+        [
+            loo_class_callable(single_row=obs, index=index, **methods_parameters)
+            for index, obs in enumerate(data)
+        ]
+    ).squeeze()

@@ -191,9 +191,10 @@ class KNeighborsClassifier(Classifier):
         # values at once
         data = self._preprocess_new_data(new_data, standardize=standardize_new)
 
+        axis = 0 if data.ndim == 1 else 1
         categories = np.apply_along_axis(
             func1d=self.categorize_element,
-            axis=1,
+            axis=axis,
             arr=data,
             standardize=False,
             n_neighbors=n_neighbors,

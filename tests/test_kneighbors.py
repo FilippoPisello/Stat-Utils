@@ -313,3 +313,11 @@ class TestKneighbors(TestCase):
         cls2 = KNeighborsClassifier(df1, "De", standardize=True)
         res2 = cls2.categorize_training_data(n_neighbors=10)
         pd.testing.assert_series_equal(res2, exp2)
+
+    def test_categorize_new(self):
+        """Check that new object is categorized correctly"""
+        res = self.cls.categorize_new_data(np.array([3.5, 600]))
+        pd.testing.assert_series_equal(res, pd.Series(["admit"]))
+
+        res = self.cls.categorize_new_data(np.array([[3.5, 600], [3.5, 600]]))
+        pd.testing.assert_series_equal(res, pd.Series(["admit", "admit"]))

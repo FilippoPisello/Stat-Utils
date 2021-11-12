@@ -79,7 +79,7 @@ class KNeighborsClassifier(Classifier):
         accuracy = [
             self.categorize_training_data(
                 validation=validation, as_prediction=True, n_neighbors=number
-            ).accuracy_score
+            ).percentage_correctly_classified
             for number in neighbors_to_test
         ]
         return pd.DataFrame(

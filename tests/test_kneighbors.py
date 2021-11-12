@@ -16,12 +16,15 @@ class TestKneighbors(TestCase):
         new_data = np.array([313.0, 3.15])
 
         for number in range(1, 10):
-            dist = self.cls.distances_from_observations(new_data, standardize=True)
+            new_data = (new_data - self.cls.data.mean(axis=0)) / self.cls.data.std(
+                axis=0
+            )
+            dist = self.cls.distances_from_observations(new_data)
             neigh = self.cls.neighbors_from_distances(dist, n_neighbors=number)
             self.assertEqual(len(neigh), number)
 
     def test_means(self):
-        res = self.cls.means()
+        res = self.cls.data.mean(axis=0)
         exp = np.array([488.44705882, 2.97458824])
         np.testing.assert_allclose(res, exp, rtol=1e-5, atol=1e-5)
 

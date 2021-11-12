@@ -33,3 +33,7 @@ predictions/__pycache__/validation.cpython-39.pyc
 classifiers/__pycache__/kneighbors.cpython-39.pyc
 tests/__pycache__/test_kneighbors.cpython-39.pyc
 classifiers/__pycache__/classifier.cpython-39.pyc
+profiling files/Knegih_test1.prof
+profiling files/Knegih_test2.prof
+profiling files/Maha_test1.prof
+profiling files/Maha_test2.prof

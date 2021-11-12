@@ -187,7 +187,10 @@ class KNeighborsClassifier(Classifier):
         pd.Series
             [description]
         """
+        # Standardization happens here so that it is applied to all the passed
+        # values at once
         data = self._preprocess_new_data(new_data, standardize=standardize_new)
+
         categories = np.apply_along_axis(
             func1d=self.categorize_element,
             axis=1,
@@ -221,7 +224,9 @@ class KNeighborsClassifier(Classifier):
         Any
             The inferred category for the passed element.
         """
-        distances = self.distances_from_observations(data, standardize)
+        if standardize:
+            data = (data - self.data.mean(axis=0)) / self.data.std(axis=0)
+        distances = self.distances_from_observations(data)
         neighbors = self.neighbors_from_distances(distances, n_neighbors)
         return self.category_from_neighbors(neighbors)
 
@@ -244,7 +249,7 @@ class KNeighborsClassifier(Classifier):
         data = data.squeeze()
 
         if standardize:
-            return (data - self.means()) / self.stds()
+            return (data - self.data.mean(axis=0)) / self.data.std(axis=0)
         return data
 
     @staticmethod
@@ -294,9 +299,7 @@ class KNeighborsClassifier(Classifier):
         idx_closest = np.argsort(distances)
         return self.outcomes[idx_closest[:n_neighbors], 0]
 
-    def distances_from_observations(
-        self, data: np.ndarray, standardize: bool = True
-    ) -> np.ndarray:
+    def distances_from_observations(self, data: np.ndarray) -> np.ndarray:
         """Return the distance between the single item data and all the
         observations in the dataset.
 
@@ -307,10 +310,6 @@ class KNeighborsClassifier(Classifier):
             for. Its shape must be (K, 1) where K is the number of columns used
             to compute the distance.
 
-        standardize : bool, optional
-            If True, the new passed data is standardized using the whole dataset
-            mean and std before the distance is computed, by default True.
-
         Returns
         -------
         np.ndarray
@@ -318,51 +317,4 @@ class KNeighborsClassifier(Classifier):
             index i is the distance between data and observation with index i
             in the dataset.
         """
-        if standardize:
-            data = (data - self.means()) / self.stds()
         return euclidean_from_point(self.std_data, data)
-
-    def stds(self, as_series: bool = False) -> Union[np.ndarray, pd.Series]:
-        """Return the means for each of the columns in the dataset used to
-        compute the distances.
-
-        Parameters
-        ----------
-        as_series : bool, optional
-            If True, the means are returned as pandas series. Otherwise, means
-            are returned as numpy arrays, by default False.
-
-        Returns
-        -------
-        Union[np.ndarray, pd.Series]
-            An object with shape (K,) where K is the number of columns used
-            to compute the distance. The type depends on the parameter
-            as_series.
-        """
-        stds = self.df_all.loc[:, self.data_columns].std(axis=0)
-        if as_series:
-            return stds
-        return stds.to_numpy()
-
-    def means(self, as_series: bool = False) -> Union[np.ndarray, pd.Series]:
-        """Return the standard deviations for each of the columns in the dataset
-        used to compute the distances.
-
-        Parameters
-        ----------
-        as_series : bool, optional
-            If True, the standard deviations are returned as pandas series.
-            Otherwise, standard deviations are returned as numpy arrays, by
-            default False.
-
-        Returns
-        -------
-        Union[np.ndarray, pd.Series]
-            An object with shape (K,) where K is the number of columns used
-            to compute the distance. The type depends on the parameter
-            as_series.
-        """
-        means = self.df_all.loc[:, self.data_columns].mean(axis=0)
-        if as_series:
-            return means
-        return means.to_numpy()

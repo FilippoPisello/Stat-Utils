@@ -245,25 +245,33 @@ class MahalanobisClassifier(Classifier):
     ) -> Union[np.ndarray, pd.DataFrame]:
         """Return the means with shape (M, K) where K is the number of variables
         and M is the number of different values attained by the classifier col."""
-        means_df = self.df_all.groupby(self.class_col)[self.data_columns].mean()
-
         if as_dataframe:
+            means_df = self.df_all.groupby(self.class_col)[self.data_columns].mean()
             return means_df
 
-        return means_df.to_numpy()
+        return np.array(
+            [
+                (self.data[self.outcomes[:, 0] == val, :]).mean(axis=0)
+                for val in self.categories
+            ]
+        )
 
     def cov_matrix(self, as_dataframe: bool = False) -> Union[np.ndarray, pd.DataFrame]:
         """Return the covariances with shape (M, K, K) where K is the number
-        of values and M is the number of different values attained by the
+        of variables and M is the number of different values attained by the
         classifier column.
 
         Each element (z, i, j) of the matrix represents the covariance between
         the variable i and j, conditional to value z. For example, element
         (0, 1, 0) is the covariance between the first and second variable for the
         group of observations with the first value for the categorization column."""
-        grouped_df = self.df_all.groupby(self.class_col)
-
         if as_dataframe:
+            grouped_df = self.df_all.groupby(self.class_col)
             return grouped_df[self.data_columns].cov()
 
-        return np.array([group[1][self.data_columns].cov() for group in grouped_df])
+        return np.array(
+            [
+                np.cov(self.data[self.outcomes[:, 0] == val, :].transpose())
+                for val in self.categories
+            ]
+        )

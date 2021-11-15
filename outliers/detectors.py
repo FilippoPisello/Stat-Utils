@@ -1,8 +1,10 @@
 """Contains detector interface and implementations. Detectors provide criteria
 to identify outliers."""
 from dataclasses import dataclass
-from typing import Protocol, Union
+from statistics import NormalDist
+from typing import Protocol
 
+import numpy as np
 import pandas as pd
 from scipy.stats import median_abs_deviation
 
@@ -24,19 +26,15 @@ class Detector(Protocol):
 class MeanDetector:
     """Represent the outlier detector obtained using the mean and the standard
     deviation.
-
-    Returns
-    -------
-    [type]
-        [description]
     """
 
     series: pd.Series
-    factor: Union[int, float]
+    quantile: float
 
     @property
     def width(self) -> float:
-        return self.factor * self.series.std()
+        crit_value = NormalDist().inv_cdf((1 + self.quantile) / 2.0)
+        return crit_value * self.series.std()
 
     @property
     def center(self) -> float:
@@ -58,15 +56,16 @@ class MadDetector:
     """
 
     series: pd.Series
-    factor: Union[int, float]
+    quantile: float
 
     @property
     def width(self) -> float:
-        return self.factor * 1.48 * median_abs_deviation(self.series)
+        crit_value = NormalDist().inv_cdf((1 + self.quantile) / 2.0)
+        return crit_value * 1.48 * median_abs_deviation(self.series)
 
     @property
     def center(self) -> float:
-        return median_abs_deviation(self.series)
+        return np.median(self.series)
 
     @property
     def range_min(self) -> float:

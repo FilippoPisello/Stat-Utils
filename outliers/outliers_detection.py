@@ -11,9 +11,9 @@ import outliers.detectors as detect
 
 
 def outliers_plot(
-    series: Union[pd.Series, np.array],
+    series: Union[pd.Series, np.ndarray],
     method: str = "mean",
-    factor: int = 2,
+    quantile: float = 0.95,
     figsize: tuple[int, int] = (20, 8),
     lines_color: str = "red",
 ) -> None:
@@ -25,15 +25,16 @@ def outliers_plot(
         The series to be plotted.
     method : str, optional
         The method to be used to identify the outliers, by default "mean".
-    factor : int, optional
-        The factor to be used to determine the accepted range, by default 2.
+    quantile : float, optional
+        The quantile to be used to determine the acceptance range. Given a value
+        X, it is expected that X% of the observations will fall in the range.
     figsize : tuple[int, int], optional
         The size of the plot, by default (20, 8).
     lines_color : str, optional
         The matplotlib color of the lines delimiting the outliers tresholds, by
         default "red".
     """
-    detector = _detector_from_method(series, method, factor)
+    detector = _detector_from_method(series, method, quantile)
     _, ax = plot_series(
         series,
         figsize,
@@ -47,7 +48,7 @@ def outliers_plot(
 
 
 def dataframe_outliers(
-    dataframe: pd.DataFrame, column: str, method: str = "mean", factor: int = 2
+    dataframe: pd.DataFrame, column: str, method: str = "mean", quantile: float = 0.95
 ) -> pd.DataFrame:
     """Return the outliers for the provided data frame computed through the
     specified method.
@@ -62,9 +63,9 @@ def dataframe_outliers(
         The method to be used to compute the boundaries. Accepted methods are
         "mean" (uses mean and standard deviation) and "mad" (using median absolute
         deviation and corrected standard deviation). "Mad" requires normality.
-    factor : int, optional
-        The number of deviations to be used to compute the interval width.
-        By default is equal to 2.
+    quantile : float, optional
+        The quantile to be used to determine the acceptance range. Given a value
+        X, it is expected that X% of the observations will fall in the range.
 
     Returns
     -------
@@ -73,12 +74,12 @@ def dataframe_outliers(
         interest marked as outliers.
     """
     output = dataframe.copy()
-    outliers = series_outliers(output[column], method, factor)
+    outliers = series_outliers(output[column], method, quantile)
     return output.loc[outliers.index, :]
 
 
 def series_outliers(
-    series: Union[pd.Series, np.array], method: str = "mean", factor: int = 2
+    series: Union[pd.Series, np.ndarray], method: str = "mean", quantile: float = 0.95
 ) -> pd.Series:
     """Return the outliers for the specified series computed through a provided
     method.
@@ -91,25 +92,25 @@ def series_outliers(
         The method to be used to compute the boundaries. Accepted methods are
         "mean" (uses mean and standard deviation) and "mad" (using median absolute
         deviation and corrected standard deviation). "Mad" requires normality.
-    factor : int, optional
-        The number of deviations to be used to compute the interval width.
-        By default is equal to 2.
+    quantile : float, optional
+        The quantile to be used to determine the acceptance range. Given a value
+        X, it is expected that X% of the observations will fall in the range.
 
     Returns
     -------
     pd.Series
         The series containing only the values identified as outliers.
     """
-    detector = _detector_from_method(series, method, factor)
+    detector = _detector_from_method(series, method, quantile)
     return series[(series < detector.range_min) | (series > detector.range_max)]
 
 
 def _detector_from_method(
-    series: pd.Series, method: str, factor: int
+    series: pd.Series, method: str, quantile: int
 ) -> detect.Detector:
     """Return a detector object to identify outliers in a series."""
     if method == "mean":
-        return detect.MeanDetector(series, factor)
+        return detect.MeanDetector(series, quantile)
     if method == "mad":
-        return detect.MadDetector(series, factor)
+        return detect.MadDetector(series, quantile)
     raise ValueError(f"No method called {method}")

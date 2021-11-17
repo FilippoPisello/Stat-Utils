@@ -1,7 +1,6 @@
-from typing import Any, Callable, Type
+from typing import Any, Callable
 
 import numpy as np
-from tqdm import tqdm
 
 
 def leave_one_out_validation(

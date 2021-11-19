@@ -5,14 +5,88 @@ import pandas as pd
 from distances.euclidean import euclidean_from_point
 from predictions.prediction import Prediction
 from predictions.validation import leave_one_out_validation
-from preprocessing.scaling import standardize_array
 
 from classifiers.classifier import Classifier
 
 
 class KNeighborsClassifier(Classifier):
+    """
+    Class to categorize data using the K-Neighbors-Classification. The
+    technique identifies the K nearest observation from the element considered
+    and infers its category from the neighbors' categories.
+
+    As an example, if one is classifying "Good" and "Bad" students, if 4 out of
+    the 5 considered neighbors are labeled as "Good", than "Good" is inferred.
+
+    Attributes
+    ----------
+    predictors : np.ndarray
+        Numpy array of shape (N, K) where N is the number of observations and K
+        is the number of variables. It contains the data for the predictors
+        variables, also referred as Xs or exogenous variables.
+
+    std_predictors : np.ndarray
+        Numpy array of shape (N, K) containing the standardized predictors.
+
+    outcomes : np.ndarray
+        One dimensional numpy array of shape (N,) containing the data relative
+        to the value to be predicted. Also referred as Y or endogenous variable.
+
+    Properties
+    ----------
+    categories : np.ndarray
+        One dimensional numpy array of shape (M,) containing all the unique values
+        attained by outcomes data. These are all the existing categories.
+
+    number_categories : int
+        Number of unique categories.
+
+    number_obs : int
+        Number of observations provided. Corresponds to predictors.shape[0].
+
+    number_vars : int
+        Number of predictors. Corresponds to predictors.shape[1].
+    """
+
     def __init__(
         self,
+        predictors: np.ndarray,
+        outcomes: np.ndarray,
+        standardize: bool = True,
+    ):
+        """Create a KNeighborsClassifier instance from a dataframe.
+
+        Parameters
+        ----------
+        dataframe : pd.DataFrame
+            The pandas dataframe containing the data.
+
+        classifier_col : str
+            The label of the column in the dataframe that contains the information
+            over the classification.
+
+        usecols : list[str], optional
+            The list of columns that contain data to be used to assess the
+            distance. If None, all the dataframe columns excluding classifier_col
+            are used.
+
+        standardize: bool, optional
+            If True, the data used to compute the distances - thus the predictors
+            - is standardized. This technique presupposes data to be standardized
+            so this parameter should be set to True unless the data is not
+            already standardized. By default, True.
+        """
+        super().__init__(predictors, outcomes)
+        # Predictors and outcomes as numpy arrays
+        self.std_predictors = (
+            self._standardize_with_predictors(self.predictors)
+            if standardize
+            else self.predictors
+        )
+
+    @classmethod
+    def from_dataframe(
+        cls,
         dataframe: pd.DataFrame,
         classifier_col: str,
         usecols: list[str] = None,
@@ -46,9 +120,9 @@ class KNeighborsClassifier(Classifier):
             so this parameter should be set to True unless the data is not
             already standardized. By default, True.
         """
-        super().__init__(dataframe, classifier_col, usecols)
-        # Predictors and outcomes as numpy arrays
-        self.std_data = standardize_array(self.data) if standardize else self.data
+        return super().from_dataframe(
+            dataframe, classifier_col, usecols, standardize=standardize
+        )
 
     def neighbors_performance(
         self,
@@ -125,25 +199,29 @@ class KNeighborsClassifier(Classifier):
         """
         if validation in ["loo", "leave one out"]:
             categories = leave_one_out_validation(
-                data=self.data,
+                data=self.predictors,
                 loo_class_callable=self._loo_distances_training_data,
                 n_neighbors=n_neighbors,
             )
-            categories = pd.Series(categories.squeeze())
+            categories = categories.squeeze()
 
         if not as_prediction:
+            categories = pd.Series(categories)
             return categories
-        return Prediction(categories, self.category_series)
+
+        return Prediction(categories, self.outcomes)
 
     def _loo_distances_training_data(
         self, single_row: np.ndarray, index: int, n_neighbors: int
     ):
         """Method to be passed to the leave one out validator. It performs
         each individual loop of the validation."""
+        filt = np.ones(self.number_obs).astype(bool)
+        filt[index] = False
+
         classifier = KNeighborsClassifier(
-            dataframe=self.df_all[~self.df_all.index.isin([index])],
-            classifier_col=self.class_col,
-            usecols=self.data_columns,
+            predictors=self.predictors[filt],
+            outcomes=self.outcomes[filt],
             standardize=True,
         )
         return classifier.categorize_element(
@@ -155,6 +233,7 @@ class KNeighborsClassifier(Classifier):
         new_data: Union[pd.DataFrame, np.ndarray],
         n_neighbors: int = 5,
         standardize_new: bool = True,
+        usecols: Union[None, list[str]] = None,
     ) -> pd.Series:
         """Return a 1D array containing the inferred categories for the passed
         data.
@@ -189,7 +268,9 @@ class KNeighborsClassifier(Classifier):
         """
         # Standardization happens here so that it is applied to all the passed
         # values at once
-        data = self._preprocess_new_data(new_data, standardize=standardize_new)
+        data = self._preprocess_new_data(
+            new_data, standardize=standardize_new, usecols=usecols
+        )
 
         axis = 0 if data.ndim == 1 else 1
         categories = np.apply_along_axis(
@@ -208,7 +289,7 @@ class KNeighborsClassifier(Classifier):
 
         Parameters
         ----------
-        data : np.array
+        data : np.ndarray
             The array containing the new data the distance should be measured
             for. Its shape must be (K, 1) where K is the number of columns used
             to compute the distance.
@@ -226,31 +307,29 @@ class KNeighborsClassifier(Classifier):
             The inferred category for the passed element.
         """
         if standardize:
-            data = (data - self.data.mean(axis=0)) / self.data.std(axis=0)
+            data = self._standardize_with_predictors(data)
         distances = self.distances_from_observations(data)
         neighbors = self.neighbors_from_distances(distances, n_neighbors)
         return self.category_from_neighbors(neighbors)
 
     # from NEW DATA to NEW DATA
     def _preprocess_new_data(
-        self, new_data: Union[pd.DataFrame, np.ndarray], standardize: bool
+        self,
+        new_data: Union[pd.DataFrame, np.ndarray],
+        standardize: bool,
+        usecols: Union[None, list[str]],
     ) -> np.ndarray:
         """Return new_data in numpy form if not numpy, making sure that it is
         compatible with existing data."""
         data = new_data.copy()
+
         if isinstance(new_data, pd.DataFrame):
-            try:
-                data = data.loc[:, self.data_columns]
-            except KeyError as e:
-                raise KeyError(
-                    """The dataframe with new data must have the same
-                               data columns as the original one"""
-                ) from e
+            if usecols is not None:
+                data = data.loc[:, usecols]
             data = data.to_numpy()
-        data = data.squeeze()
 
         if standardize:
-            return (data - self.data.mean(axis=0)) / self.data.std(axis=0)
+            return self._standardize_with_predictors(data)
         return data
 
     @staticmethod
@@ -298,7 +377,7 @@ class KNeighborsClassifier(Classifier):
             the specified closest neighbors belong to.
         """
         idx_closest = np.argsort(distances)
-        return self.outcomes[idx_closest[:n_neighbors], 0]
+        return self.outcomes[idx_closest[:n_neighbors]]
 
     def distances_from_observations(self, data: np.ndarray) -> np.ndarray:
         """Return the distance between the single item data and all the
@@ -318,4 +397,7 @@ class KNeighborsClassifier(Classifier):
             index i is the distance between data and observation with index i
             in the dataset.
         """
-        return euclidean_from_point(self.std_data, data)
+        return euclidean_from_point(self.std_predictors, data)
+
+    def _standardize_with_predictors(self, array: np.ndarray) -> np.ndarray:
+        return (array - self.predictors.mean(axis=0)) / self.predictors.std(axis=0)

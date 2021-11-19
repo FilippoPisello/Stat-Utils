@@ -7,7 +7,7 @@ from classifiers.kneighbors import KNeighborsClassifier
 
 class TestKneighbors(TestCase):
     df = pd.read_excel("tests/test_data/admissions.xlsx")
-    cls = KNeighborsClassifier(df, "De", standardize=True)
+    cls = KNeighborsClassifier.from_dataframe(df, "De", standardize=True)
 
     # THE PROCESS IS STOCHASTIC SO A SEED IS NEEDED
     np.random.seed(9999)
@@ -16,16 +16,16 @@ class TestKneighbors(TestCase):
         new_data = np.array([313.0, 3.15])
 
         for number in range(1, 10):
-            new_data = (new_data - self.cls.data.mean(axis=0)) / self.cls.data.std(
-                axis=0
-            )
+            new_data = (
+                new_data - self.cls.predictors.mean(axis=0)
+            ) / self.cls.predictors.std(axis=0)
             dist = self.cls.distances_from_observations(new_data)
             neigh = self.cls.neighbors_from_distances(dist, n_neighbors=number)
             self.assertEqual(len(neigh), number)
 
     def test_means(self):
-        res = self.cls.data.mean(axis=0)
-        exp = np.array([488.44705882, 2.97458824])
+        res = self.cls.predictors.mean(axis=0)
+        exp = np.array([2.97458824, 488.44705882])
         np.testing.assert_allclose(res, exp, rtol=1e-5, atol=1e-5)
 
     def test_looclassification(self):
@@ -310,7 +310,7 @@ class TestKneighbors(TestCase):
         exp2 = exp.replace("admit", "zadmit")
         df1 = self.df.copy()
         df1["De"] = df1["De"].replace("admit", "zadmit")
-        cls2 = KNeighborsClassifier(df1, "De", standardize=True)
+        cls2 = KNeighborsClassifier.from_dataframe(df1, "De", standardize=True)
         res2 = cls2.categorize_training_data(n_neighbors=10)
         pd.testing.assert_series_equal(res2, exp2)
 

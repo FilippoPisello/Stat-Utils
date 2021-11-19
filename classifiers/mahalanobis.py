@@ -13,27 +13,59 @@ from classifiers.classifier import Classifier
 
 
 class MahalanobisClassifier(Classifier):
-    def __init__(
-        self, dataframe: pd.DataFrame, classifier_col: str, usecols: list[str] = None
-    ):
+    """Class to categorize data using the Discriminant Analysis, the technique
+    based on the minimization of Mahalanobis distance.
+
+    The classification builds upon the identification of observations groups
+    based on the values attained for the outcome variable. For each of this
+    group it is computed the 2D mean accounting for all the predictors. The
+    categorization happens by matching the observation in analysis with the
+    group whose center is closest.
+
+    Attributes
+    ----------
+    predictors : np.ndarray
+        Numpy array of shape (N, K) where N is the number of observations and K
+        is the number of variables. It contains the data for the predictors
+        variables, also referred as Xs or exogenous variables.
+
+    outcomes : np.ndarray
+        One dimensional numpy array of shape (N,) containing the data relative
+        to the value to be predicted. Also referred as Y or endogenous variable.
+
+    Properties
+    ----------
+    categories : np.ndarray
+        One dimensional numpy array of shape (M,) containing all the unique values
+        attained by outcomes data. These are all the existing categories.
+
+    number_categories : int
+        Number of unique categories.
+
+    number_obs : int
+        Number of observations provided. Corresponds to predictors.shape[0].
+
+    number_vars : int
+        Number of predictors. Corresponds to predictors.shape[1].
+    """
+
+    def __init__(self, predictors: np.ndarray, outcomes: np.ndarray):
         """Class to categorize data using the Discriminant Analysis, the
         technique based on the minimization of Mahalanobis distance.
 
         Parameters
         ----------
-        dataframe : pd.DataFrame
-            The pandas dataframe containing the data.
+        predictors : np.ndarray
+            Numpy array of shape (N, K) where N is the number of observations
+            and K is the number of variables. It contains the data for the
+            predictors variables, also referred as Xs or exogenous variables.
 
-        classifier_col : str
-            The label of the column in the dataframe that contains the information
-            over the classification.
-
-        usecols : list[str], optional
-            The list of columns that contain data to be used to assess the
-            distance. If None, all the dataframe columns excluding classifier_col
-            are used.
+        outcomes : np.ndarray
+            One dimensional numpy array of shape (N,) containing the data
+            relative to the value to be predicted. Also referred as Y or
+            endogenous variable.
         """
-        super().__init__(dataframe, classifier_col, usecols)
+        super().__init__(predictors, outcomes)
 
     # from EXISTING DATA to CATEGORY
     def categorize_training_data(
@@ -73,14 +105,17 @@ class MahalanobisClassifier(Classifier):
             distances = self.distances_training_data()
         elif validation in ["loo", "leave one out"]:
             distances = leave_one_out_validation(
-                data=self.data,
+                data=self.predictors,
                 loo_class_callable=self._loo_distances_training_data,
             )
 
         categories = self.categories_from_distances(distances)
+
         if not as_prediction:
+            categories = pd.Series(categories)
             return categories
-        return Prediction(categories, self.category_series)
+
+        return Prediction(categories, self.outcomes)
 
     # from EXISTING DATA to DISTANCES
     def distances_training_data(
@@ -107,23 +142,27 @@ class MahalanobisClassifier(Classifier):
             y = [1, ..., M].
         """
         return self.distances_from_centers(
-            self.data, sqrt=sqrt, as_dataframe=as_dataframe
+            self.predictors, sqrt=sqrt, as_dataframe=as_dataframe
         )
 
     # from EXISTING DATA to DISTANCES, for LOO validation
     def _loo_distances_training_data(self, single_row: np.ndarray, index: int):
         """Method to be passed to the leave one out validator. It performs
         each individual loop of the validation."""
+        filt = np.ones(self.number_obs).astype(bool)
+        filt[index] = False
+
         classifier = MahalanobisClassifier(
-            dataframe=self.df_all[~self.df_all.index.isin([index])],
-            classifier_col=self.class_col,
-            usecols=self.data_columns,
+            predictors=self.predictors[filt],
+            outcomes=self.outcomes[filt],
         )
         return classifier.distances_from_centers(single_row)
 
     # from NEW DATA to CATEGORY
     def categorize_new_data(
-        self, new_data: Union[pd.DataFrame, np.ndarray]
+        self,
+        new_data: Union[pd.DataFrame, np.ndarray],
+        usecols: Union[None, list[str]] = None,
     ) -> pd.Series:
         """Given a set of data with size (N, K), return a pandas series with length
         N containing the mahanalobis categories for the input data.
@@ -161,26 +200,25 @@ class MahalanobisClassifier(Classifier):
             "Foo" "Bar", then "Foo" "Bar" must be within new_data columns.
 
         """
-        data = self._preprocess_new_data(new_data)
+        data = self._preprocess_new_data(new_data, usecols=usecols)
         distances = self.distances_from_centers(data)
         return self.categories_from_distances(distances)
 
     # from NEW DATA to NEW DATA
     def _preprocess_new_data(
-        self, new_data: Union[pd.DataFrame, np.ndarray]
+        self,
+        new_data: Union[pd.DataFrame, np.ndarray],
+        usecols: Union[None, list[str]],
     ) -> np.ndarray:
         """Return new_data in numpy form if not numpy, making sure that it is
         compatible with existing data."""
         data = new_data.copy()
+
         if isinstance(new_data, pd.DataFrame):
-            try:
-                data = data.loc[:, self.data_columns]
-            except KeyError as e:
-                raise KeyError(
-                    """The dataframe with new data must have the same
-                               data columns as the original one"""
-                ) from e
+            if usecols is not None:
+                data = data.loc[:, usecols]
             data = data.to_numpy()
+
         return data.squeeze()
 
     # GENERAL: from DISTANCES to CATEGORY
@@ -240,23 +278,17 @@ class MahalanobisClassifier(Classifier):
             return pd.DataFrame(distances, columns=self.categories)
         return distances
 
-    def means_matrix(
-        self, as_dataframe: bool = False
-    ) -> Union[np.ndarray, pd.DataFrame]:
+    def means_matrix(self) -> np.ndarray:
         """Return the means with shape (M, K) where K is the number of variables
         and M is the number of different values attained by the classifier col."""
-        if as_dataframe:
-            means_df = self.df_all.groupby(self.class_col)[self.data_columns].mean()
-            return means_df
-
         return np.array(
             [
-                (self.data[self.outcomes[:, 0] == val, :]).mean(axis=0)
+                (self.predictors[self.outcomes == val, :]).mean(axis=0)
                 for val in self.categories
             ]
         )
 
-    def cov_matrix(self, as_dataframe: bool = False) -> Union[np.ndarray, pd.DataFrame]:
+    def cov_matrix(self) -> np.ndarray:
         """Return the covariances with shape (M, K, K) where K is the number
         of variables and M is the number of different values attained by the
         classifier column.
@@ -265,13 +297,10 @@ class MahalanobisClassifier(Classifier):
         the variable i and j, conditional to value z. For example, element
         (0, 1, 0) is the covariance between the first and second variable for the
         group of observations with the first value for the categorization column."""
-        if as_dataframe:
-            grouped_df = self.df_all.groupby(self.class_col)
-            return grouped_df[self.data_columns].cov()
 
         return np.array(
             [
-                np.cov(self.data[self.outcomes[:, 0] == val, :].transpose())
+                np.cov(self.predictors[self.outcomes == val, :].transpose())
                 for val in self.categories
             ]
         )

@@ -107,7 +107,9 @@ class TestMahalanobis(TestCase):
             ]
         )
 
-        cls = MahalanobisClassifier(self.df1, "IsGood", ["Budget", "Duration"])
+        cls = MahalanobisClassifier.from_dataframe(
+            self.df1, "IsGood", ["Budget", "Duration"]
+        )
         res = cls.categorize_training_data()
         np.testing.assert_array_equal(res[:20], exp)
 
@@ -115,12 +117,16 @@ class TestMahalanobis(TestCase):
         # as expected
         df1_mod = self.df1.copy()
         df1_mod["IsGood"] = ~df1_mod["IsGood"]
-        cls1 = MahalanobisClassifier(df1_mod, "IsGood", ["Budget", "Duration"])
+        cls1 = MahalanobisClassifier.from_dataframe(
+            df1_mod, "IsGood", ["Budget", "Duration"]
+        )
         res = cls1.categorize_training_data()
         np.testing.assert_array_equal(res[:20], ~exp)
 
         # Check that if columns are inverted result is still the same
-        cls2 = MahalanobisClassifier(self.df1, "IsGood", ["Duration", "Budget"])
+        cls2 = MahalanobisClassifier.from_dataframe(
+            self.df1, "IsGood", ["Duration", "Budget"]
+        )
         res = cls2.categorize_training_data()
         np.testing.assert_array_equal(res[:20], exp)
 
@@ -174,7 +180,9 @@ class TestMahalanobis(TestCase):
 
     def test_new_categorization(self):
         """Test that new observations are classified correctly."""
-        cls = MahalanobisClassifier(self.df1, "IsGood", ["Budget", "Duration"])
+        cls = MahalanobisClassifier.from_dataframe(
+            self.df1, "IsGood", ["Budget", "Duration"]
+        )
 
         # Distances: Passing 1 new observation as 1D array
         new_data = np.array([90, 2810])

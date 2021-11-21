@@ -400,4 +400,6 @@ class KNeighborsClassifier(Classifier):
         return euclidean_from_point(self.std_predictors, data)
 
     def _standardize_with_predictors(self, array: np.ndarray) -> np.ndarray:
+        """Standardize the provided array using the standard deviation and
+        mean from the training sample."""
         return (array - self.predictors.mean(axis=0)) / self.predictors.std(axis=0)
